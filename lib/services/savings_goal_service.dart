@@ -31,7 +31,18 @@ class SavingsGoalService {
         .update({'saved_amount': current + amount}).eq('id', id);
   }
 
-  Future<void> delete(String id) async {
+  Future<void> delete(String id, String title) async {
+    final userId = supabase.auth.currentUser!.id;
+
+    // Delete all expense entries linked to this goal
+    await supabase
+        .from('expenses')
+        .delete()
+        .eq('user_id', userId)
+        .eq('sector', 'Savings')
+        .eq('details', 'Added to goal: $title');
+
+    // Then delete the goal itself
     await supabase.from(_table).delete().eq('id', id);
   }
 }

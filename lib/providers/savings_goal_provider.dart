@@ -33,8 +33,8 @@ class SavingsGoalNotifier
     await fetchAll();
   }
 
-  Future<void> delete(String id) async {
-    await _service.delete(id);
+  Future<void> delete(String id, String title) async {
+    await _service.delete(id, title);
     await fetchAll();
   }
 }

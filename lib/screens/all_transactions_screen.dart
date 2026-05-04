@@ -18,9 +18,21 @@ class AllTransactionsScreen extends ConsumerStatefulWidget {
 class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
   final _searchCtrl = TextEditingController();
   String _searchText = '';
-  String _filterType = 'All'; // All / Income / Expense
-  String _sortOrder = 'Oldest'; // Oldest / Newest
-  DateTime? _selectedMonth; // null = no month filter
+  String _filterType = 'All';
+  String _filterCategory = 'All'; // All / Loan / Goal / Savings / Recurring
+  String _sortOrder = 'Oldest';
+  DateTime? _selectedMonth;
+
+  // Sector tags used by each category
+  static const _loanSectors = {
+    'Loan Given',
+    'Loan Received',
+    'Loan Borrowed',
+    'Loan Repaid'
+  };
+  static const _goalSectors = {'Savings'};
+  static const _recurringTag =
+      '(auto)'; // recurring entries have "(auto)" in details
 
   @override
   void dispose() {
@@ -28,7 +40,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     super.dispose();
   }
 
-  // Month picker dialog
   Future<void> _pickMonth(BuildContext context) async {
     int pickerYear = _selectedMonth?.year ?? DateTime.now().year;
     int pickerMonth = _selectedMonth?.month ?? DateTime.now().month;
@@ -43,7 +54,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Year row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -61,7 +71,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                // Month grid
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -74,7 +83,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   itemCount: 12,
                   itemBuilder: (_, i) {
                     final month = i + 1;
-                    final isSelected = pickerMonth == month;
+                    final selected = pickerMonth == month;
                     final label =
                         DateFormat('MMM').format(DateTime(2000, month));
                     return GestureDetector(
@@ -82,25 +91,23 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                       child: Container(
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: isSelected
+                          color: selected
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.onPrimary
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 13,
-                          ),
-                        ),
+                        child: Text(label,
+                            style: TextStyle(
+                              color: selected
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                              fontWeight: selected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 13,
+                            )),
                       ),
                     );
                   },
@@ -128,6 +135,24 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         ),
       ),
     );
+  }
+
+  bool _matchesCategory(Map<String, dynamic> t) {
+    if (_filterCategory == 'All') return true;
+
+    final sector = t['sector'] as String;
+    final details = t['details'] as String;
+
+    switch (_filterCategory) {
+      case 'Loan':
+        return _loanSectors.contains(sector);
+      case 'Goal':
+        return _goalSectors.contains(sector);
+      case 'Recurring':
+        return details.contains(_recurringTag);
+      default:
+        return true;
+    }
   }
 
   List<Map<String, dynamic>> _buildList(
@@ -158,6 +183,9 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         });
       }
     }
+
+    // Category filter
+    list.retainWhere(_matchesCategory);
 
     // Month filter
     if (_selectedMonth != null) {
@@ -199,9 +227,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('All Transactions'),
-      ),
+      appBar: AppBar(title: const Text('All Transactions')),
       body: incomeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -235,10 +261,10 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   ),
                 ),
 
-                // ── Month filter button ─────────────
+                // ── Row 1: Month + Type + Sort ──────
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -260,15 +286,15 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.calendar_month_outlined,
-                                  size: 16,
-                                  color: _selectedMonth != null
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                ),
+                                Icon(Icons.calendar_month_outlined,
+                                    size: 16,
+                                    color: _selectedMonth != null
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant),
                                 const SizedBox(width: 6),
                                 Text(
                                   monthLabel ?? 'All months',
@@ -288,13 +314,11 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                   GestureDetector(
                                     onTap: () =>
                                         setState(() => _selectedMonth = null),
-                                    child: Icon(
-                                      Icons.close,
-                                      size: 14,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary,
-                                    ),
+                                    child: Icon(Icons.close,
+                                        size: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary),
                                   ),
                                 ],
                               ],
@@ -338,7 +362,56 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   ),
                 ),
 
-                // ── Count + active filters ──────────
+                // ── Row 2: Category filters ─────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final entry in [
+                          {'label': 'All', 'icon': Icons.list_alt_rounded},
+                          {'label': 'Loan', 'icon': Icons.handshake_outlined},
+                          {'label': 'Goal', 'icon': Icons.track_changes},
+                          {'label': 'Recurring', 'icon': Icons.repeat},
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              avatar: Icon(
+                                entry['icon'] as IconData,
+                                size: 14,
+                                color: _filterCategory == entry['label']
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                              ),
+                              label: Text(
+                                entry['label'] as String,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _filterCategory == entry['label']
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : null,
+                                ),
+                              ),
+                              selected: _filterCategory == entry['label'],
+                              selectedColor:
+                                  Theme.of(context).colorScheme.primary,
+                              onSelected: (_) => setState(() =>
+                                  _filterCategory = entry['label'] as String),
+                              visualDensity: VisualDensity.compact,
+                              showCheckmark: false,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // ── Count ───────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
@@ -354,6 +427,17 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                         const SizedBox(width: 6),
                         Text(
                           '· $monthLabel',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      if (_filterCategory != 'All') ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '· $_filterCategory',
                           style: TextStyle(
                             fontSize: 12,
                             color: Theme.of(context).colorScheme.primary,
@@ -401,13 +485,17 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                 ),
                                 title: Text(t['sector'],
                                     style: const TextStyle(
-                                        fontWeight: FontWeight.w500)),
+                                        fontWeight: FontWeight.w500),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     if ((t['details'] as String).isNotEmpty)
                                       Text(t['details'],
-                                          style: const TextStyle(fontSize: 12)),
+                                          style: const TextStyle(fontSize: 12),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
                                     Text(dateStr,
                                         style: const TextStyle(
                                             fontSize: 11, color: Colors.grey)),

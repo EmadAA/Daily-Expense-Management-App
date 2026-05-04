@@ -338,9 +338,39 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                                 icon: const Icon(Icons.delete_outline,
                                     color: Colors.red, size: 20),
                                 onPressed: () async {
-                                  await ref
-                                      .read(savingsGoalProvider.notifier)
-                                      .delete(goal.id);
+                                  // Show confirmation first
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: const Text('Delete Goal'),
+                                      content: Text(
+                                        'Delete "${goal.title}"?\n\nAll money added to this goal (৳ ${fmt.format(goal.savedAmount)}) will be returned to your balance.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true) {
+                                    await ref
+                                        .read(savingsGoalProvider.notifier)
+                                        .delete(goal.id, goal.title);
+                                    ref.invalidate(expenseProvider);
+                                  }
                                 },
                               ),
                             ],
