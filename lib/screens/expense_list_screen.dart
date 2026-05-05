@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../models/expense_model.dart';
 import '../providers/expense_provider.dart';
+import '../providers/loan_provider.dart';
+import '../providers/savings_goal_provider.dart';
 import 'expense_form_screen.dart';
 
 class ExpenseListScreen extends ConsumerWidget {
@@ -186,10 +188,15 @@ class _ExpenseCard extends ConsumerWidget {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () async {
-                      Navigator.pop(context);
+                      Navigator.pop(context); // close sheet first
                       await ref
                           .read(expenseProvider.notifier)
                           .delete(expense.id);
+                      // Only invalidate if ref is still valid
+                      try {
+                        ref.invalidate(loanProvider);
+                        ref.invalidate(savingsGoalProvider);
+                      } catch (_) {}
                     },
                     child: const Text('Delete'),
                   ),

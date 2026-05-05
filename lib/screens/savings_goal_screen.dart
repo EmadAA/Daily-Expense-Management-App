@@ -207,12 +207,11 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
               final amount = double.tryParse(_addCtrl.text.trim());
               if (amount == null || amount <= 0) return;
 
-              // Update goal saved amount
               await ref
                   .read(savingsGoalProvider.notifier)
                   .addToSaved(goal.id, amount);
 
-              // Auto-create expense — money set aside
+              // Auto-create expense with source info
               await ref.read(expenseProvider.notifier).add(
                     ExpenseModel(
                       id: '',
@@ -221,6 +220,8 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                       amount: amount,
                       date: DateTime.now(),
                       currency: 'BDT',
+                      sourceType: 'goal', // ← add
+                      sourceId: goal.id, // ← add
                     ),
                   );
 

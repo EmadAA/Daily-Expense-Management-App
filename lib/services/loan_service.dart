@@ -14,9 +14,14 @@ class LoanService {
     return (res as List).map((r) => LoanModel.fromMap(r)).toList();
   }
 
-  Future<void> add(LoanModel loan) async {
+  Future<String> add(LoanModel loan) async {
     final userId = supabase.auth.currentUser!.id;
-    await supabase.from(_table).insert(loan.toMap(userId));
+    final res = await supabase
+        .from(_table)
+        .insert(loan.toMap(userId))
+        .select('id')
+        .single();
+    return res['id'] as String;
   }
 
   Future<void> markPaid(String id, double amount) async {
@@ -29,6 +34,12 @@ class LoanService {
   }
 
   Future<void> delete(String id) async {
+    // Delete all income/expense entries linked to this loan
+    await supabase.from('expenses').delete().eq('source_id', id);
+
+    await supabase.from('incomes').delete().eq('source_id', id);
+
+    // Delete the loan itself
     await supabase.from(_table).delete().eq('id', id);
   }
 }

@@ -42,13 +42,24 @@ class RecurringService {
           r.lastAdded!.month == now.month) continue;
 
       // Add to incomes or expenses table
-      final table = r.type == 'income' ? 'incomes' : 'expenses';
-      await supabase.from(table).insert({
+      await supabase.from('incomes').insert({
         'user_id': userId,
         'sector': r.sector,
         'details': '${r.details} (auto)',
         'amount': r.amount,
         'date': dueThisMonth.toIso8601String().substring(0, 10),
+        'source_type': 'recurring', // ← add
+        'source_id': r.id, // ← add
+      });
+
+      await supabase.from('expenses').insert({
+        'user_id': userId,
+        'sector': r.sector,
+        'details': '${r.details} (auto)',
+        'amount': r.amount,
+        'date': dueThisMonth.toIso8601String().substring(0, 10),
+        'source_type': 'recurring', // ← add
+        'source_id': r.id, // ← add
       });
 
       // Update last_added

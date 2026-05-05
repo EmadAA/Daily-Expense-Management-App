@@ -10,6 +10,7 @@ import '../providers/auth_provider.dart';
 import '../providers/currency_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
+import '../providers/loan_provider.dart';
 import '../providers/recurring_provider.dart';
 import '../services/currency_rate_service.dart';
 import 'all_transactions_screen.dart';
@@ -147,15 +148,27 @@ class _Body extends ConsumerWidget {
     return ratesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => _buildBody(
-          context, selectedCurrency, CurrencyRateService.fallbackRates),
-      data: (rates) => _buildBody(context, selectedCurrency, rates),
+          context, ref, selectedCurrency, CurrencyRateService.fallbackRates),
+      data: (rates) => _buildBody(context, ref, selectedCurrency, rates),
     );
   }
 
-  Widget _buildBody(BuildContext context, String selectedCurrency,
-      Map<String, double> rates) {
+  Widget _buildBody(BuildContext context, WidgetRef ref,
+      String selectedCurrency, Map<String, double> rates) {
     final fmt = NumberFormat('#,##0.00');
     final symbol = CurrencyRateService.symbolFor(selectedCurrency);
+
+    // Get all unsettled loans
+    final loanAsync = ref.watch(loanProvider);
+    final loans = loanAsync.value ?? [];
+
+    final totalLentRemaining = loans
+        .where((l) => l.isLent && !l.isSettled)
+        .fold(0.0, (sum, l) => sum + l.remaining);
+
+    final totalBorrowedRemaining = loans
+        .where((l) => !l.isLent && !l.isSettled)
+        .fold(0.0, (sum, l) => sum + l.remaining);
 
     // Loan-related sectors to exclude from displayed totals
     const loanSectors = {
@@ -281,6 +294,71 @@ class _Body extends ConsumerWidget {
                     ),
                   ],
                 ),
+                // After the Income/Expense pills row
+                if (totalLentRemaining > 0 || totalBorrowedRemaining > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        if (totalBorrowedRemaining > 0)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Borrowed (pending)',
+                                style: TextStyle(
+                                  color: Colors.greenAccent.shade100,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                balanceVisible
+                                    ? '+ $symbol ${fmt.format(totalBorrowedRemaining)}'
+                                    : '****',
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (totalLentRemaining > 0) ...[
+                          if (totalBorrowedRemaining > 0)
+                            const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Lent (pending)',
+                                style: TextStyle(
+                                  color: Colors.redAccent.shade100,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                balanceVisible
+                                    ? '- $symbol ${fmt.format(totalLentRemaining)}'
+                                    : '****',
+                                style: const TextStyle(
+                                  color: Colors.redAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

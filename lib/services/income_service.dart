@@ -5,8 +5,10 @@ class IncomeService {
   final String _table = 'incomes';
 
   Future<List<IncomeModel>> fetchAll() async {
-    final res =
-        await supabase.from(_table).select().order('date', ascending: false);
+    final res = await supabase
+        .from(_table)
+        .select()
+        .order('created_at', ascending: false);
     return (res as List).map((row) => IncomeModel.fromMap(row)).toList();
   }
 
@@ -26,6 +28,32 @@ class IncomeService {
   }
 
   Future<void> delete(String id) async {
+    final res = await supabase
+        .from(_table)
+        .select('amount, source_type, source_id')
+        .eq('id', id)
+        .single();
+
+    final amount = (res['amount'] as num).toDouble();
+    final sourceType = res['source_type'] as String?;
+    final sourceId = res['source_id'] as String?;
+
     await supabase.from(_table).delete().eq('id', id);
+
+    // If this was a loan repayment income, reduce paid_amount on loan
+    if (sourceType == 'loan_repayment' && sourceId != null) {
+      final loanRes = await supabase
+          .from('loans')
+          .select('paid_amount')
+          .eq('id', sourceId)
+          .maybeSingle();
+
+      if (loanRes != null) {
+        final current = (loanRes['paid_amount'] as num).toDouble();
+        await supabase.from('loans').update({
+          'paid_amount': (current - amount).clamp(0, double.infinity)
+        }).eq('id', sourceId);
+      }
+    }
   }
 }

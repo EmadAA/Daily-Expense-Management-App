@@ -175,6 +175,9 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                 final amount = double.tryParse(_amountCtrl.text.trim());
                 if (amount == null || amount <= 0) return;
 
+                // Close dialog FIRST before any async work
+                Navigator.pop(context);
+
                 final loan = LoanModel(
                   id: '',
                   type: _type,
@@ -186,10 +189,9 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                   createdAt: DateTime.now(),
                 );
 
-                await ref.read(loanProvider.notifier).add(loan);
+                final loanId = await ref.read(loanProvider.notifier).add(loan);
 
                 if (_type == 'lent') {
-                  // I gave money out → expense
                   await ref.read(expenseProvider.notifier).add(
                         ExpenseModel(
                           id: '',
@@ -199,10 +201,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                           amount: amount,
                           date: DateTime.now(),
                           currency: 'BDT',
+                          sourceType: 'loan',
+                          sourceId: loanId,
                         ),
                       );
                 } else {
-                  // I received money → income
                   await ref.read(incomeProvider.notifier).add(
                         IncomeModel(
                           id: '',
@@ -212,11 +215,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                           amount: amount,
                           date: DateTime.now(),
                           currency: 'BDT',
+                          sourceType: 'loan',
+                          sourceId: loanId,
                         ),
                       );
                 }
-
-                if (ctx.mounted) Navigator.pop(ctx);
               },
               child: const Text('Save'),
             ),
@@ -257,10 +260,12 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
               final amount = double.tryParse(_paidCtrl.text.trim());
               if (amount == null || amount <= 0) return;
 
+              // Close dialog FIRST before any async work
+              Navigator.pop(context);
+
               await ref.read(loanProvider.notifier).markPaid(loan.id, amount);
 
               if (loan.isLent) {
-                // They paid me back → income
                 await ref.read(incomeProvider.notifier).add(
                       IncomeModel(
                         id: '',
@@ -269,10 +274,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                         amount: amount,
                         date: DateTime.now(),
                         currency: 'BDT',
+                        sourceType: 'loan_repayment',
+                        sourceId: loan.id,
                       ),
                     );
               } else {
-                // I paid them back → expense
                 await ref.read(expenseProvider.notifier).add(
                       ExpenseModel(
                         id: '',
@@ -281,11 +287,11 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                         amount: amount,
                         date: DateTime.now(),
                         currency: 'BDT',
+                        sourceType: 'loan_repayment',
+                        sourceId: loan.id,
                       ),
                     );
               }
-
-              if (mounted) Navigator.pop(context);
             },
             child: const Text('Confirm'),
           ),

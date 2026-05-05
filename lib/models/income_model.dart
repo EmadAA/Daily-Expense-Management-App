@@ -6,6 +6,8 @@ class IncomeModel {
   final DateTime date;
   final String currency;
   final String? receiptUrl;
+  final String? sourceType;
+  final String? sourceId;
 
   IncomeModel({
     required this.id,
@@ -15,6 +17,8 @@ class IncomeModel {
     required this.date,
     this.currency = 'BDT',
     this.receiptUrl,
+    this.sourceType,
+    this.sourceId,
   });
 
   factory IncomeModel.fromMap(Map<String, dynamic> map) {
@@ -26,6 +30,8 @@ class IncomeModel {
       date: DateTime.parse(map['date']),
       currency: map['currency'] ?? 'BDT',
       receiptUrl: map['receipt_url'],
+      sourceType: map['source_type'],
+      sourceId: map['source_id'],
     );
   }
 
@@ -38,6 +44,8 @@ class IncomeModel {
       'date': date.toIso8601String().substring(0, 10),
       'currency': currency,
       'receipt_url': receiptUrl,
+      'source_type': sourceType,
+      'source_id': sourceId,
     };
   }
 }

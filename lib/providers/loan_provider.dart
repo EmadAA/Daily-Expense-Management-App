@@ -22,9 +22,10 @@ class LoanNotifier extends StateNotifier<AsyncValue<List<LoanModel>>> {
     }
   }
 
-  Future<void> add(LoanModel loan) async {
-    await _service.add(loan);
+  Future<String> add(LoanModel loan) async {
+    final id = await _service.add(loan);
     await fetchAll();
+    return id;
   }
 
   Future<void> markPaid(String id, double amount) async {
