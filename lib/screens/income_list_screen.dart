@@ -6,6 +6,7 @@ import '../models/income_model.dart';
 import '../providers/income_provider.dart';
 import '../providers/loan_provider.dart';
 import '../providers/savings_goal_provider.dart';
+import '../services/refresh_service.dart';
 import 'income_form_screen.dart';
 
 class IncomeListScreen extends ConsumerWidget {
@@ -18,6 +19,13 @@ class IncomeListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Income'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(

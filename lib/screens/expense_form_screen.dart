@@ -11,8 +11,7 @@ import '../services/currency_rate_service.dart';
 import '../services/storage_service.dart';
 
 class ExpenseFormScreen extends ConsumerStatefulWidget {
-  final ExpenseModel? expense; // null = add mode, non-null = edit mode
-
+  final ExpenseModel? expense;
   const ExpenseFormScreen({super.key, this.expense});
 
   @override
@@ -20,6 +19,10 @@ class ExpenseFormScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
+  static const _coral = Color(0xFFD85A30);
+  static const _coralLight = Color(0xFFFAECE7);
+  static const _coralMid = Color(0xFFF0997B);
+
   String _currency = 'BDT';
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _sectorCtrl;
@@ -30,6 +33,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   File? _pickedImage;
   String? _existingReceiptUrl;
   bool _uploadingImage = false;
+
   bool get _isEditing => widget.expense != null;
 
   @override
@@ -40,8 +44,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     _detailsCtrl = TextEditingController(text: widget.expense?.details ?? '');
     _existingReceiptUrl = widget.expense?.receiptUrl;
     _amountCtrl = TextEditingController(
-      text: widget.expense != null ? widget.expense!.amount.toString() : '',
-    );
+        text: widget.expense != null ? widget.expense!.amount.toString() : '');
     _selectedDate = widget.expense?.date ?? DateTime.now();
   }
 
@@ -56,13 +59,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
-      maxWidth: 1024,
-    );
-    if (picked != null) {
-      setState(() => _pickedImage = File(picked.path));
-    }
+        source: ImageSource.gallery, imageQuality: 70, maxWidth: 1024);
+    if (picked != null) setState(() => _pickedImage = File(picked.path));
   }
 
   Future<void> _pickDate() async {
@@ -83,7 +81,6 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       setState(() => _uploadingImage = false);
     }
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
 
     try {
@@ -99,239 +96,452 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
         );
         await ref.read(expenseProvider.notifier).update(expense);
         if (mounted) {
-          await showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              icon: const Icon(Icons.check_circle,
-                  color: Color(0xFF1D9E75), size: 48),
-              title: const Text('Updated!'),
-              content: const Text('Expense has been updated successfully.'),
-              actions: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
+          await _showSuccessDialog('Updated!', 'Expense updated successfully.');
           if (mounted) Navigator.pop(context);
         }
       } else {
-        await ref.read(expenseProvider.notifier).add(
-              ExpenseModel(
-                id: '',
-                sector: _sectorCtrl.text.trim(),
-                details: _detailsCtrl.text.trim(),
-                amount: double.parse(_amountCtrl.text.trim()),
-                date: _selectedDate,
-                currency: _currency,
-              ),
-            );
+        await ref.read(expenseProvider.notifier).add(ExpenseModel(
+              id: '',
+              sector: _sectorCtrl.text.trim(),
+              details: _detailsCtrl.text.trim(),
+              amount: double.parse(_amountCtrl.text.trim()),
+              date: _selectedDate,
+              currency: _currency,
+              receiptUrl: receiptUrl,
+            ));
         if (mounted) {
-          await showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              icon: const Icon(Icons.check_circle,
-                  color: Color(0xFF1D9E75), size: 48),
-              title: const Text('Saved!'),
-              content: const Text('Expense has been saved successfully.'),
-              actions: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Ok'),
-                ),
-              ],
-            ),
-          );
-          // Clear fields after saving
+          await _showSuccessDialog('Saved!', 'Expense saved successfully.');
           if (mounted) {
             setState(() {
               _sectorCtrl.clear();
               _detailsCtrl.clear();
               _amountCtrl.clear();
               _selectedDate = DateTime.now();
+              _pickedImage = null;
+              _existingReceiptUrl = null;
             });
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  Future<void> _showSuccessDialog(String title, String message) async {
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        icon: const Icon(Icons.check_circle, color: _coral, size: 48),
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(_isEditing ? 'OK' : 'Add More'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateStr =
         '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
+    final bgColor = isDark ? const Color(0xFF1F0D0D) : const Color(0xFFFDF5F2);
 
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
+        backgroundColor: bgColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.arrow_back, size: 18),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          _isEditing ? 'Edit Expense' : 'Add Expense',
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Sector
-              TextFormField(
-                controller: _sectorCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Sector name',
-                  hintText: 'e.g. Food, Transport, Utilities',
-                  prefixIcon: Icon(Icons.label_outline),
+              // ── Header banner ─────────────────────
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [_coral, _coralMid],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Please enter a sector' : null,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.arrow_upward_rounded,
+                          color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isEditing
+                              ? 'Edit expense entry'
+                              : 'New expense entry',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Fill in the details below',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+
+              // ── Section: Details ──────────────────
+              _sectionLabel('Details', Icons.info_outline),
+              const SizedBox(height: 12),
+
+              // Sector
+              _buildField(
+                child: TextFormField(
+                  controller: _sectorCtrl,
+                  decoration: _fieldDecoration(
+                    label: 'Sector name',
+                    hint: 'e.g. Food, Transport, Utilities',
+                    icon: Icons.label_outline,
+                  ),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Please enter a sector' : null,
+                ),
+              ),
+              const SizedBox(height: 12),
 
               // Details
-              TextFormField(
-                controller: _detailsCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Details (optional)',
-                  hintText: 'e.g. Lunch at restaurant',
-                  prefixIcon: Icon(Icons.edit_note_outlined),
+              _buildField(
+                child: TextFormField(
+                  controller: _detailsCtrl,
+                  maxLines: 2,
+                  decoration: _fieldDecoration(
+                    label: 'Details',
+                    hint: 'e.g. Lunch at restaurant',
+                    icon: Icons.edit_note_outlined,
+                  ),
                 ),
-                maxLines: 2,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Amount
-              TextFormField(
-                controller: _amountCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Amount (৳)',
-                  prefixIcon: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    child: Text(
-                      '৳',
-                      style: TextStyle(
-                        fontSize: 25,
-                        fontWeight: FontWeight.bold,
+              // ── Section: Amount ───────────────────
+              _sectionLabel('Amount & Date', Icons.payments_outlined),
+              const SizedBox(height: 12),
+
+              // Amount + Currency row
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: _buildField(
+                      child: TextFormField(
+                        controller: _amountCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w700),
+                        decoration: _fieldDecoration(
+                          label: 'Amount',
+                          hint: '0.00',
+                          icon: Icons.attach_money_outlined,
+                          prefix: Text(
+                            CurrencyRateService.symbolFor(_currency),
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: _coral),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Enter amount';
+                          if (double.tryParse(v) == null) return 'Invalid';
+                          if (v.contains('-')) return 'No negative';
+                          if (double.parse(v) <= 0) return 'Must be positive';
+                          return null;
+                        },
                       ),
                     ),
                   ),
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Please enter amount';
-                  if (double.tryParse(v) == null) return 'Invalid number';
-                  if (v.contains('-')) return 'Amount cannot be negative';
-                  if (double.parse(v) <= 0) return 'Amount must be positive';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Date picker
-              InkWell(
-                onTap: _pickDate,
-                borderRadius: BorderRadius.circular(10),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Date',
-                    prefixIcon: Icon(Icons.date_range_outlined),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: _buildField(
+                      child: DropdownButtonFormField<String>(
+                        value: _currency,
+                        decoration: _fieldDecoration(
+                          label: 'Currency',
+                          icon: Icons.currency_exchange,
+                        ),
+                        isDense: true,
+                        items: CurrencyRateService.supported
+                            .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c,
+                                      style: const TextStyle(fontSize: 13)),
+                                ))
+                            .toList(),
+                        onChanged: (v) => setState(() => _currency = v!),
+                      ),
+                    ),
                   ),
-                  child: Text(dateStr),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Date
+              _buildField(
+                child: InkWell(
+                  onTap: _pickDate,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InputDecorator(
+                    decoration: _fieldDecoration(
+                      label: 'Date',
+                      icon: Icons.calendar_today_outlined,
+                    ),
+                    child: Text(
+                      dateStr,
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-// Receipt photo
+              const SizedBox(height: 24),
+
+              // ── Section: Receipt ──────────────────
+              _sectionLabel('Receipt Photo', Icons.receipt_long_outlined),
+              const SizedBox(height: 12),
+
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
-                  height: 120,
+                  height: 130,
                   decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : _coralLight.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outline
-                            .withOpacity(0.4)),
-                    borderRadius: BorderRadius.circular(10),
+                      color: _coral.withOpacity(0.3),
+                      width: 1.5,
+                      strokeAlign: BorderSide.strokeAlignOutside,
+                    ),
                   ),
                   child: _pickedImage != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(16),
                           child: Image.file(_pickedImage!,
                               fit: BoxFit.cover, width: double.infinity),
                         )
                       : _existingReceiptUrl != null
                           ? ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: // NEW
-                                  Image.memory(
-                                      base64Decode(_existingReceiptUrl!),
-                                      fit: BoxFit.cover,
-                                      width: double.infinity),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.memory(
+                                  base64Decode(_existingReceiptUrl!),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity),
                             )
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_a_photo_outlined,
-                                    color:
-                                        Theme.of(context).colorScheme.outline),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: _coral.withOpacity(0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.add_a_photo_outlined,
+                                      color: _coral, size: 24),
+                                ),
                                 const SizedBox(height: 8),
-                                Text('Add receipt photo (optional)',
+                                Text('Tap to add receipt photo',
                                     style: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .outline,
-                                        fontSize: 13)),
+                                        color: _coral.withOpacity(0.8),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 2),
+                                Text('Optional',
+                                    style: TextStyle(
+                                        color: _coral.withOpacity(0.5),
+                                        fontSize: 11)),
                               ],
                             ),
                 ),
               ),
-// Currency selector
-              DropdownButtonFormField<String>(
-                value: _currency,
-                decoration: const InputDecoration(
-                  labelText: 'Currency',
-                  prefixIcon: Icon(Icons.currency_exchange),
-                ),
-                items: CurrencyRateService.supported
-                    .map((c) => DropdownMenuItem(
-                          value: c,
-                          child:
-                              Text('$c  ${CurrencyRateService.symbolFor(c)}'),
-                        ))
-                    .toList(),
-                onChanged: (v) => setState(() => _currency = v!),
-              ),
+              const SizedBox(height: 32),
 
-              // Save button
-              ElevatedButton(
-                onPressed: (_isLoading || _uploadingImage) ? null : _save,
-                child: _isLoading || _uploadingImage
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2)),
-                          const SizedBox(width: 10),
-                          Text(_uploadingImage
-                              ? 'Uploading photo...'
-                              : 'Saving...'),
-                        ],
-                      )
-                    : Text(_isEditing ? 'Update' : 'Save'),
+              // ── Save button ───────────────────────
+              SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: (_isLoading || _uploadingImage) ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _coral,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: _isLoading || _uploadingImage
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white)),
+                            const SizedBox(width: 12),
+                            Text(
+                              _uploadingImage
+                                  ? 'Uploading photo...'
+                                  : 'Saving...',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check_rounded, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              _isEditing ? 'Update Expense' : 'Save Expense',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // ── Helpers ──────────────────────────────────────────
+
+  Widget _sectionLabel(String text, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: _coral),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: _coral,
+              letterSpacing: 0.5),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildField({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    String? hint,
+    required IconData icon,
+    Widget? prefix,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: prefix != null
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              child: prefix,
+            )
+          : Icon(icon, color: _coral, size: 20),
+      labelStyle: TextStyle(color: _coral.withOpacity(0.8), fontSize: 13),
+      floatingLabelStyle:
+          const TextStyle(color: _coral, fontWeight: FontWeight.w600),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _coral, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      filled: true,
+      fillColor: Colors.transparent,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

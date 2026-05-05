@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../providers/budget_provider.dart';
 import '../providers/expense_provider.dart';
+import '../services/refresh_service.dart';
 
 class BudgetScreen extends ConsumerStatefulWidget {
   const BudgetScreen({super.key});
@@ -97,7 +98,16 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     final now = DateTime.now();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Budget Limits')),
+      appBar: AppBar(
+        title: const Text('Budget Limits'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(),
         child: const Icon(Icons.add),

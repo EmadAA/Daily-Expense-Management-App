@@ -6,6 +6,7 @@ import '../models/recurring_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
 import '../providers/recurring_provider.dart';
+import '../services/refresh_service.dart';
 
 class RecurringScreen extends ConsumerStatefulWidget {
   const RecurringScreen({super.key});
@@ -174,6 +175,11 @@ class _RecurringScreenState extends ConsumerState<RecurringScreen> {
       appBar: AppBar(
         title: const Text('Recurring Transactions'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
           // Manual process button
           IconButton(
             icon: const Icon(Icons.sync),

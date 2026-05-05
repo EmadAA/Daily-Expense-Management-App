@@ -8,6 +8,7 @@ import '../models/loan_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
 import '../providers/loan_provider.dart';
+import '../services/refresh_service.dart';
 
 class LoansScreen extends ConsumerStatefulWidget {
   const LoansScreen({super.key});
@@ -464,6 +465,13 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
             Tab(text: 'I Lent'),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddDialog,

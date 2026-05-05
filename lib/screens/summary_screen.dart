@@ -7,6 +7,7 @@ import '../models/expense_model.dart';
 import '../models/income_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
+import '../services/refresh_service.dart';
 
 class SummaryScreen extends ConsumerStatefulWidget {
   const SummaryScreen({super.key});
@@ -83,7 +84,16 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     final fmt = NumberFormat('#,##0.00');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Monthly Summary')),
+      appBar: AppBar(
+        title: const Text('Monthly Summary'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
+      ),
       body: incomeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),

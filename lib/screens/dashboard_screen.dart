@@ -13,6 +13,7 @@ import '../providers/income_provider.dart';
 import '../providers/loan_provider.dart';
 import '../providers/recurring_provider.dart';
 import '../services/currency_rate_service.dart';
+import '../services/refresh_service.dart';
 import 'all_transactions_screen.dart';
 import 'budget_screen.dart';
 import 'expense_list_screen.dart';
@@ -54,6 +55,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
           // Currency switcher
           Consumer(
             builder: (context, ref, _) {
@@ -311,7 +317,7 @@ class _Body extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Borrowed (pending)',
+                                'Loan Borrowed (Have to pay)',
                                 style: TextStyle(
                                   color: Colors.greenAccent.shade100,
                                   fontSize: 11,
@@ -336,7 +342,7 @@ class _Body extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Lent (pending)',
+                                'Loan Lent (Have to receive)',
                                 style: TextStyle(
                                   color: Colors.redAccent.shade100,
                                   fontSize: 11,

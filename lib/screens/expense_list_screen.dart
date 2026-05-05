@@ -6,6 +6,7 @@ import '../models/expense_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/loan_provider.dart';
 import '../providers/savings_goal_provider.dart';
+import '../services/refresh_service.dart';
 import 'expense_form_screen.dart';
 
 class ExpenseListScreen extends ConsumerWidget {
@@ -18,8 +19,17 @@ class ExpenseListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Expense'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFD85A30),
+        foregroundColor: Colors.white,
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ExpenseFormScreen()),

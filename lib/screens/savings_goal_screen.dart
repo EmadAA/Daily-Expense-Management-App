@@ -6,6 +6,7 @@ import '../models/expense_model.dart';
 import '../models/savings_goal_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/savings_goal_provider.dart';
+import '../services/refresh_service.dart';
 
 class SavingsGoalsScreen extends ConsumerStatefulWidget {
   const SavingsGoalsScreen({super.key});
@@ -240,7 +241,16 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
     final fmt = NumberFormat('#,##0.00');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Savings Goals')),
+      appBar: AppBar(
+        title: const Text('Savings Goals'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddGoalDialog,
         child: const Icon(Icons.add),

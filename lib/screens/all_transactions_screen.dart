@@ -6,6 +6,7 @@ import '../models/expense_model.dart';
 import '../models/income_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
+import '../services/refresh_service.dart';
 
 class AllTransactionsScreen extends ConsumerStatefulWidget {
   const AllTransactionsScreen({super.key});
@@ -227,7 +228,16 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('All Transactions')),
+      appBar: AppBar(
+        title: const Text('All Transactions'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => refreshAll(ref),
+          ),
+        ],
+      ),
       body: incomeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
