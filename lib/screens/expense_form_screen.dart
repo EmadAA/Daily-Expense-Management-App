@@ -93,6 +93,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           date: _selectedDate,
           currency: _currency,
           receiptUrl: receiptUrl,
+          sourceType: widget.expense!.sourceType,
+          sourceId: widget.expense!.sourceId,
         );
         await ref.read(expenseProvider.notifier).update(expense);
         if (mounted) {

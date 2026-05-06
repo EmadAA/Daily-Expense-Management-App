@@ -12,6 +12,7 @@ import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
 import '../providers/loan_provider.dart';
 import '../providers/recurring_provider.dart';
+import '../screens/account_screen.dart';
 import '../services/currency_rate_service.dart';
 import '../services/refresh_service.dart';
 import 'all_transactions_screen.dart';
@@ -431,8 +432,20 @@ class _Body extends ConsumerWidget {
             ),
           ],
         ),
-
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _NavButton(
+              label: 'Accounts',
+              icon: Icons.account_balance_wallet,
+              color: const Color(0xFF378ADD),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const AccountsScreen())),
+            ),
+            const SizedBox(width: 12),
+            // Keep existing Transfer placeholder or add another feature
+          ],
+        ),
         const SizedBox(height: 12),
         Row(
           children: [

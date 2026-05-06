@@ -93,6 +93,8 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
           date: _selectedDate,
           currency: _currency,
           receiptUrl: receiptUrl,
+          sourceType: widget.income!.sourceType,
+          sourceId: widget.income!.sourceId,
         );
         await ref.read(incomeProvider.notifier).update(income);
         if (mounted) {
