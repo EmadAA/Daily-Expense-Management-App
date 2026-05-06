@@ -8,6 +8,7 @@ import '../models/income_model.dart';
 import '../providers/account_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
+import '../screens/transfers_screen.dart';
 import '../services/refresh_service.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
@@ -200,10 +201,27 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final fmt = NumberFormat('#,##0.00');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Accounts'), actions: [
-        IconButton(
-            icon: const Icon(Icons.refresh), onPressed: () => refreshAll(ref))
-      ]),
+      appBar: AppBar(
+        title: const Text('Accounts',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const TransfersScreen())),
+              icon: const Icon(Icons.swap_horiz, size: 18),
+              label: const Text('Transfer Balances'),
+              style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14))),
+            ),
+          ),
+          IconButton(
+              icon: const Icon(Icons.refresh), onPressed: () => refreshAll(ref))
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
           onPressed: _showAddDialog, child: const Icon(Icons.add)),
       body: accountAsync.when(

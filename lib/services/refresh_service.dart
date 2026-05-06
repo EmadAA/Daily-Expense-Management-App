@@ -8,8 +8,10 @@ import '../providers/loan_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/recurring_provider.dart';
 import '../providers/savings_goal_provider.dart';
+import '../providers/transfer_provider.dart';
 
 void refreshAll(WidgetRef ref) {
+  ref.invalidate(transferProvider);
   ref.invalidate(incomeProvider);
   ref.invalidate(accountProvider);
   ref.invalidate(expenseProvider);
