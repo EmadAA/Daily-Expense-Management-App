@@ -225,12 +225,6 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Navigator.pop(ctx),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -240,7 +234,7 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
                   const SizedBox(height: 8),
                   _buildDropdown(
                     value: _fromAccountId,
-                    hint: 'Select source account',
+                    hint: 'From account',
                     icon: Icons.arrow_upward_rounded,
                     items: _buildAccountDropdownItems(ref),
                     onChanged: (v) {
@@ -256,7 +250,7 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
                   const SizedBox(height: 8),
                   _buildDropdown(
                     value: _toAccountId,
-                    hint: 'Select destination account',
+                    hint: 'To account',
                     icon: Icons.arrow_downward_rounded,
                     items: _buildAccountDropdownItems(ref,
                         excludeId: _fromAccountId),
@@ -389,7 +383,6 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        flex: 2,
                         child: ElevatedButton(
                           onPressed: () async {
                             if (_fromAccountId == null || _toAccountId == null)

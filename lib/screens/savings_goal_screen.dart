@@ -276,112 +276,134 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
       barrierColor: Colors.black38,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-          decoration: BoxDecoration(
-            color: Theme.of(context).dialogBackgroundColor,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 24,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).dialogBackgroundColor,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              // ✅ Added scrollable
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        // ✅ Allow title to flex
+                        child: Text(
+                          'Add to "${goal.title}"',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.visible,
+                          maxLines: 2, // ✅ Allow 2 lines if needed
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_outlined),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero, // ✅ Remove extra padding
+                        constraints:
+                            const BoxConstraints(), // ✅ Fix constraints
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Text(
-                    'Add to "${goal.title}"',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                    'Target: ৳ ${NumberFormat('#,##0.00').format(goal.targetAmount)}',
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _addCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'Amount to add (৳)',
+                      prefixIcon: const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        child: Text(
+                          '৳',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_outlined),
-                    onPressed: () => Navigator.pop(ctx),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final amount = double.tryParse(_addCtrl.text.trim());
+                        if (amount == null || amount <= 0) return;
+
+                        Navigator.pop(ctx);
+                        await ref
+                            .read(savingsGoalProvider.notifier)
+                            .addToSaved(goal.id, amount);
+
+                        await ref.read(expenseProvider.notifier).add(
+                              ExpenseModel(
+                                id: '',
+                                sector: 'Savings',
+                                details: 'Added to goal: ${goal.title}',
+                                amount: amount,
+                                date: DateTime.now(),
+                                currency: 'BDT',
+                                sourceType: 'goal',
+                                sourceId: goal.id,
+                              ),
+                            );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        backgroundColor: _parseColor(goal.color),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Add Money',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Target: ৳ ${NumberFormat('#,##0.00').format(goal.targetAmount)}',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _addCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: 'Amount to add (৳)',
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    child: Text(
-                      '৳',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                ),
-              ),
-              const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final amount = double.tryParse(_addCtrl.text.trim());
-                    if (amount == null || amount <= 0) return;
-
-                    Navigator.pop(ctx);
-                    await ref
-                        .read(savingsGoalProvider.notifier)
-                        .addToSaved(goal.id, amount);
-
-                    await ref.read(expenseProvider.notifier).add(
-                          ExpenseModel(
-                            id: '',
-                            sector: 'Savings',
-                            details: 'Added to goal: ${goal.title}',
-                            amount: amount,
-                            date: DateTime.now(),
-                            currency: 'BDT',
-                            sourceType: 'goal',
-                            sourceId: goal.id,
-                          ),
-                        );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    backgroundColor: _parseColor(goal.color),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Add Money',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
