@@ -36,7 +36,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _balanceVisible = true;
-  bool _accountBalanceVisible = false;
 
   @override
   void initState() {
@@ -64,7 +63,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             tooltip: 'Refresh',
             onPressed: () => refreshAll(ref),
           ),
-          // Currency switcher
           Consumer(
             builder: (context, ref, _) {
               final selected = ref.watch(selectedCurrencyProvider);
@@ -74,10 +72,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-                  child: Text(
-                    selected,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  child: Text(selected,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 onSelected: (currency) => ref
                     .read(selectedCurrencyProvider.notifier)
@@ -127,11 +123,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               incomes: incomes,
               expenses: expenses,
               balanceVisible: _balanceVisible,
-              accountBalanceVisible: _accountBalanceVisible,
               onToggleBalance: () =>
                   setState(() => _balanceVisible = !_balanceVisible),
-              onToggleAccountBalance: () => setState(
-                  () => _accountBalanceVisible = !_accountBalanceVisible),
             ),
           ),
         ),
@@ -140,21 +133,348 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
+// ── Balance card with three views ─────────────────────────────────────────────
+
+class _BalanceCard extends StatefulWidget {
+  final double cashBalance;
+  final double accountBalance;
+  final double totalBalance;
+  final double displayIncome;
+  final double displayExpense;
+  final double totalLentRemaining;
+  final double totalBorrowedRemaining;
+  final bool balanceVisible;
+  final VoidCallback onToggleBalance;
+  final String symbol;
+  final NumberFormat fmt;
+
+  const _BalanceCard({
+    required this.cashBalance,
+    required this.accountBalance,
+    required this.totalBalance,
+    required this.displayIncome,
+    required this.displayExpense,
+    required this.totalLentRemaining,
+    required this.totalBorrowedRemaining,
+    required this.balanceVisible,
+    required this.onToggleBalance,
+    required this.symbol,
+    required this.fmt,
+  });
+
+  @override
+  State<_BalanceCard> createState() => _BalanceCardState();
+}
+
+class _BalanceCardState extends State<_BalanceCard>
+    with SingleTickerProviderStateMixin {
+  // 0 = cash, 1 = account, 2 = total
+  int _view = 0;
+  late AnimationController _ctrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 320));
+    _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _switchView(int newView) {
+    if (newView == _view) return;
+    _ctrl.reverse().then((_) {
+      setState(() => _view = newView);
+      _ctrl.forward();
+    });
+  }
+
+  String get _currentLabel {
+    switch (_view) {
+      case 1:
+        return 'Account Balance';
+      case 2:
+        return 'Total Balance';
+      default:
+        return 'Cash Balance';
+    }
+  }
+
+  double get _currentAmount {
+    switch (_view) {
+      case 1:
+        return widget.accountBalance;
+      case 2:
+        return widget.totalBalance;
+      default:
+        return widget.cashBalance;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = widget.fmt;
+    final symbol = widget.symbol;
+    final vis = widget.balanceVisible;
+
+    return Card(
+      color: Theme.of(context).colorScheme.primary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // ── Label + eye ────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: Text(
+                    _currentLabel,
+                    key: ValueKey(_view),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: widget.onToggleBalance,
+                  child: Icon(
+                    vis
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onPrimary
+                        .withOpacity(0.8),
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Main balance amount ────────────────
+            FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Text(
+                  vis ? '$symbol ${fmt.format(_currentAmount)}' : '****',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: vis ? 0 : 4,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Three tap toggles ──────────────────
+            Row(
+              children: [
+                _ViewToggle(
+                  label: 'Cash',
+                  icon: Icons.wallet_outlined,
+                  selected: _view == 0,
+                  onTap: () => _switchView(0),
+                ),
+                const SizedBox(width: 8),
+                _ViewToggle(
+                  label: 'Accounts',
+                  icon: Icons.account_balance_outlined,
+                  selected: _view == 1,
+                  onTap: () => _switchView(1),
+                ),
+                const SizedBox(width: 8),
+                _ViewToggle(
+                  label: 'Total',
+                  icon: Icons.account_balance_wallet_outlined,
+                  selected: _view == 2,
+                  onTap: () => _switchView(2),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // ── Income / Expense pills ─────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _BalancePill(
+                  label: 'Income',
+                  amount: vis
+                      ? '$symbol ${fmt.format(widget.displayIncome)}'
+                      : '****',
+                  color: Colors.greenAccent,
+                ),
+                _BalancePill(
+                  label: 'Expense',
+                  amount: vis
+                      ? '$symbol ${fmt.format(widget.displayExpense)}'
+                      : '****',
+                  color: Colors.redAccent,
+                ),
+              ],
+            ),
+
+            // ── Loan pending section ───────────────
+            if (widget.totalLentRemaining > 0 ||
+                widget.totalBorrowedRemaining > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    if (widget.totalBorrowedRemaining > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Loan Borrowed (Have to pay)',
+                            style: TextStyle(
+                              color: Colors.greenAccent.shade100,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            vis
+                                ? '+ $symbol ${fmt.format(widget.totalBorrowedRemaining)}'
+                                : '****',
+                            style: const TextStyle(
+                              color: Colors.greenAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (widget.totalLentRemaining > 0) ...[
+                      if (widget.totalBorrowedRemaining > 0)
+                        const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Loan Lent (Have to receive)',
+                            style: TextStyle(
+                              color: Colors.redAccent.shade100,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            vis
+                                ? '- $symbol ${fmt.format(widget.totalLentRemaining)}'
+                                : '****',
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Small toggle button inside the card
+class _ViewToggle extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ViewToggle({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? Colors.white.withOpacity(0.25)
+                : Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color:
+                  selected ? Colors.white.withOpacity(0.6) : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon,
+                  color: Colors.white.withOpacity(selected ? 1.0 : 0.55),
+                  size: 16),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(selected ? 1.0 : 0.55),
+                  fontSize: 10,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Body ──────────────────────────────────────────────────────────────────────
+
 class _Body extends ConsumerWidget {
   final List<IncomeModel> incomes;
   final List<ExpenseModel> expenses;
   final bool balanceVisible;
-  final bool accountBalanceVisible;
   final VoidCallback onToggleBalance;
-  final VoidCallback onToggleAccountBalance;
 
   const _Body({
     required this.incomes,
     required this.expenses,
     required this.balanceVisible,
-    required this.accountBalanceVisible,
     required this.onToggleBalance,
-    required this.onToggleAccountBalance,
   });
 
   @override
@@ -175,19 +495,17 @@ class _Body extends ConsumerWidget {
     final fmt = NumberFormat('#,##0.00');
     final symbol = CurrencyRateService.symbolFor(selectedCurrency);
 
-    // Get all unsettled loans
+    // Loans
     final loanAsync = ref.watch(loanProvider);
     final loans = loanAsync.value ?? [];
-
     final totalLentRemaining = loans
         .where((l) => l.isLent && !l.isSettled)
         .fold(0.0, (sum, l) => sum + l.remaining);
-
     final totalBorrowedRemaining = loans
         .where((l) => !l.isLent && !l.isSettled)
         .fold(0.0, (sum, l) => sum + l.remaining);
 
-    // Loan-related sectors to exclude from displayed totals
+    // Loan sectors to exclude from display totals
     const loanSectors = {
       'Loan Given',
       'Loan Received',
@@ -195,262 +513,82 @@ class _Body extends ConsumerWidget {
       'Loan Repaid',
     };
 
-    // Balance uses ALL entries including loans (keeps balance correct)
-    double convertedIncome = incomes.fold(0.0, (sum, i) {
-      return sum +
-          convertAmount(
-            amount: i.amount,
-            fromCurrency: i.currency,
-            toCurrency: selectedCurrency,
-            rates: rates,
-          );
-    });
+    // Full income/expense for balance calculation
+    double convertedIncome = incomes.fold(
+        0.0,
+        (sum, i) =>
+            sum +
+            convertAmount(
+                amount: i.amount,
+                fromCurrency: i.currency,
+                toCurrency: selectedCurrency,
+                rates: rates));
+    double convertedExpense = expenses.fold(
+        0.0,
+        (sum, e) =>
+            sum +
+            convertAmount(
+                amount: e.amount,
+                fromCurrency: e.currency,
+                toCurrency: selectedCurrency,
+                rates: rates));
 
-    double convertedExpense = expenses.fold(0.0, (sum, e) {
-      return sum +
-          convertAmount(
-            amount: e.amount,
-            fromCurrency: e.currency,
-            toCurrency: selectedCurrency,
-            rates: rates,
-          );
-    });
-
-    // Displayed totals EXCLUDE loan entries
-    double displayIncome =
-        incomes.where((i) => !loanSectors.contains(i.sector)).fold(
+    // Display totals exclude loan entries
+    double displayIncome = incomes
+        .where((i) => !loanSectors.contains(i.sector))
+        .fold(
             0.0,
             (sum, i) =>
                 sum +
                 convertAmount(
-                  amount: i.amount,
-                  fromCurrency: i.currency,
-                  toCurrency: selectedCurrency,
-                  rates: rates,
-                ));
-
-    double displayExpense =
-        expenses.where((e) => !loanSectors.contains(e.sector)).fold(
+                    amount: i.amount,
+                    fromCurrency: i.currency,
+                    toCurrency: selectedCurrency,
+                    rates: rates));
+    double displayExpense = expenses
+        .where((e) => !loanSectors.contains(e.sector))
+        .fold(
             0.0,
             (sum, e) =>
                 sum +
                 convertAmount(
-                  amount: e.amount,
-                  fromCurrency: e.currency,
-                  toCurrency: selectedCurrency,
-                  rates: rates,
-                ));
+                    amount: e.amount,
+                    fromCurrency: e.currency,
+                    toCurrency: selectedCurrency,
+                    rates: rates));
 
-    final balance = convertedIncome - convertedExpense;
+    // Account balance
+    final accountAsync = ref.watch(accountProvider);
+    final accounts = accountAsync.value ?? [];
+    final accountBalance = accounts.fold(0.0, (sum, a) => sum + a.balance);
+
+    // Cash balance = income - expense (no accounts)
+    final cashBalance = convertedIncome - convertedExpense - accountBalance;
+
+    // Total = cash + accounts
+    final totalBalance = cashBalance + accountBalance;
+
     final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
-
     final recent = _mergeAndSort(incomes, expenses)
         .where((t) => (t['date'] as DateTime).isAfter(oneWeekAgo))
         .toList();
-
-    // Calculate total account balance
-    final accountAsync = ref.watch(accountProvider);
-    final accounts = accountAsync.value ?? [];
-    final totalAccountBalance = accounts.fold(
-      0.0,
-      (sum, account) => sum + account.balance,
-    );
 
     return ListView(
       padding: const EdgeInsets.all(5),
       children: [
         // ── Balance card ──────────────────────────
-        Card(
-          color: Theme.of(context).colorScheme.primary,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Current Cash Balance',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                          fontSize: 14,
-                        )),
-                    GestureDetector(
-                      onTap: onToggleBalance,
-                      child: Icon(
-                        balanceVisible
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withOpacity(0.8),
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  balanceVisible ? '$symbol ${fmt.format(balance)}' : '****',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: balanceVisible ? 0 : 4,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Account Balance Summary ──────────────────────────
-                GestureDetector(
-                  onTap: onToggleAccountBalance,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.account_balance_wallet,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              accountBalanceVisible
-                                  ? 'Balance in Accounts'
-                                  : 'View Balance in Accounts',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimary
-                                    .withOpacity(0.9),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          accountBalanceVisible
-                              ? '$symbol ${fmt.format(totalAccountBalance)}'
-                              : '→',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontSize: accountBalanceVisible ? 15 : 16,
-                            fontWeight: accountBalanceVisible
-                                ? FontWeight.bold
-                                : FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // ── End Account Balance Summary ──────────────────────
-
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _BalancePill(
-                      label: 'Income',
-                      amount: balanceVisible
-                          ? '$symbol ${fmt.format(displayIncome)}'
-                          : '****',
-                      color: Colors.greenAccent,
-                    ),
-                    _BalancePill(
-                      label: 'Expense',
-                      amount: balanceVisible
-                          ? '$symbol ${fmt.format(displayExpense)}'
-                          : '****',
-                      color: Colors.redAccent,
-                    ),
-                  ],
-                ),
-                // After the Income/Expense pills row
-                if (totalLentRemaining > 0 || totalBorrowedRemaining > 0) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        if (totalBorrowedRemaining > 0)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Loan Borrowed (Have to pay)',
-                                style: TextStyle(
-                                  color: Colors.greenAccent.shade100,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Text(
-                                balanceVisible
-                                    ? '+ $symbol ${fmt.format(totalBorrowedRemaining)}'
-                                    : '****',
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        if (totalLentRemaining > 0) ...[
-                          if (totalBorrowedRemaining > 0)
-                            const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Loan Lent (Have to receive)',
-                                style: TextStyle(
-                                  color: Colors.redAccent.shade100,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              Text(
-                                balanceVisible
-                                    ? '- $symbol ${fmt.format(totalLentRemaining)}'
-                                    : '****',
-                                style: const TextStyle(
-                                  color: Colors.redAccent,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
+        _BalanceCard(
+          cashBalance: cashBalance,
+          accountBalance: accountBalance,
+          totalBalance: totalBalance,
+          displayIncome: displayIncome,
+          displayExpense: displayExpense,
+          totalLentRemaining: totalLentRemaining,
+          totalBorrowedRemaining: totalBorrowedRemaining,
+          balanceVisible: balanceVisible,
+          onToggleBalance: onToggleBalance,
+          symbol: symbol,
+          fmt: fmt,
         ),
         const SizedBox(height: 20),
 
@@ -482,9 +620,7 @@ class _Body extends ConsumerWidget {
             ),
           ],
         ),
-
         const SizedBox(height: 12),
-
         Row(
           children: [
             _NavButton(

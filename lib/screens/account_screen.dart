@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../models/account_model.dart';
-import '../models/expense_model.dart';
-import '../models/income_model.dart';
 import '../providers/account_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
@@ -176,79 +174,141 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
               title: Text(isDeposit
                   ? 'Deposit to ${account.name}'
                   : 'Withdraw from ${account.name}'),
-              content: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(
-                    'Current Balance: ৳ ${NumberFormat('#,##0.00').format(account.balance)}',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 12),
-                TextField(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Info note
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (isDeposit
+                              ? const Color(0xFF1D9E75)
+                              : const Color(0xFFD85A30))
+                          .withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      isDeposit
+                          ? 'This only adds to your account balance. To record actual income, use the Income page.'
+                          : 'This only reduces your account balance. To record actual expense, use the Expense page.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDeposit
+                            ? const Color(0xFF1D9E75)
+                            : const Color(0xFFD85A30),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                      'Current Balance: ৳ ${NumberFormat('#,##0.00').format(account.balance)}',
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 12),
+                  TextField(
                     controller: _amountCtrl,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     autofocus: true,
                     decoration: const InputDecoration(
-                        labelText: 'Amount (৳)',
-                        prefixIcon: Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
-                            child: Text('৳',
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold))))),
-              ]),
+                      labelText: 'Amount (৳)',
+                      prefixIcon: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          child: Text('৳',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold))),
+                    ),
+                  ),
+                ],
+              ),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: const Text('Cancel')),
                 ElevatedButton(
-                    onPressed: () async {
-                      final amount = double.tryParse(_amountCtrl.text.trim());
-                      if (amount == null || amount <= 0) return;
-                      if (!isDeposit && amount > account.balance) {
-                        if (ctx.mounted)
-                          ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                              content: Text(
-                                  'Insufficient balance for withdrawal.')));
+                  onPressed: () async {
+                    final amount = double.tryParse(_amountCtrl.text.trim());
+                    if (amount == null || amount <= 0) return;
+
+                    // 🔽 Withdrawal check: account balance
+                    if (!isDeposit && amount > account.balance) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                            backgroundColor: Color(0xFFD85A30),
+                            content: Text('❌ Insufficient account balance.')));
+                      }
+                      return;
+                    }
+
+                    // 🔽 Deposit check: cash balance validation
+                    if (isDeposit) {
+                      // Get current data from providers
+                      final incomes = ref.read(incomeProvider).value ?? [];
+                      final expenses = ref.read(expenseProvider).value ?? [];
+                      final accounts = ref.read(accountProvider).value ?? [];
+
+                      // Calculate totals (simplified - same currency assumption)
+                      // For multi-currency: use your convertAmount() utility from Dashboard
+                      final totalIncome =
+                          incomes.fold(0.0, (sum, i) => sum + i.amount);
+                      final totalExpense =
+                          expenses.fold(0.0, (sum, e) => sum + e.amount);
+                      final totalAccountBalance =
+                          accounts.fold(0.0, (sum, a) => sum + a.balance);
+
+                      // Cash Balance = Income - Expense - All Account Balances
+                      final cashBalance =
+                          totalIncome - totalExpense - totalAccountBalance;
+
+                      // 🚨 Block deposit if amount exceeds available cash
+                      if (amount > cashBalance) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                            backgroundColor: const Color(0xFFD85A30),
+                            duration: const Duration(seconds: 4),
+                            content: Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded,
+                                    color: Colors.white),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '❌ Cannot deposit more than available cash balance!\nAvailable: ৳ ${NumberFormat('#,##0.00').format(cashBalance)}',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ));
+                        }
                         return;
                       }
-                      Navigator.pop(ctx);
-                      final now = DateTime.now();
-                      if (isDeposit) {
-                        await ref
-                            .read(accountProvider.notifier)
-                            .adjustBalance(account.id, amount);
-                        await ref.read(expenseProvider.notifier).add(
-                            ExpenseModel(
-                                id: '',
-                                sector: 'Account Deposit',
-                                details: 'Deposit to ${account.name}',
-                                amount: amount,
-                                date: now,
-                                currency: 'BDT',
-                                sourceType: 'account',
-                                sourceId: account.id));
-                      } else {
-                        await ref
-                            .read(accountProvider.notifier)
-                            .adjustBalance(account.id, -amount);
-                        await ref.read(incomeProvider.notifier).add(IncomeModel(
-                            id: '',
-                            sector: 'Account Withdraw',
-                            details: 'Withdraw from ${account.name}',
-                            amount: amount,
-                            date: now,
-                            currency: 'BDT',
-                            sourceType: 'account',
-                            sourceId: account.id));
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: isDeposit
-                            ? const Color(0xFF1D9E75)
-                            : const Color(0xFFD85A30),
-                        foregroundColor: Colors.white),
-                    child: Text(isDeposit ? 'Deposit' : 'Withdraw')),
+                    }
+
+                    Navigator.pop(ctx);
+
+                    // Adjust account balance — NO income/expense entry created
+                    if (isDeposit) {
+                      await ref
+                          .read(accountProvider.notifier)
+                          .adjustBalance(account.id, amount);
+                    } else {
+                      await ref
+                          .read(accountProvider.notifier)
+                          .adjustBalance(account.id, -amount);
+                    }
+
+                    // Refresh accounts
+                    ref.invalidate(accountProvider);
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: isDeposit
+                          ? const Color(0xFF1D9E75)
+                          : const Color(0xFFD85A30),
+                      foregroundColor: Colors.white),
+                  child: Text(isDeposit ? 'Deposit' : 'Withdraw'),
+                ),
               ],
             ));
   }
