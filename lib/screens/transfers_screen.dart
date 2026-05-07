@@ -164,124 +164,354 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
 
     showDialog(
       context: context,
+      barrierColor: Colors.black38,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setInner) => AlertDialog(
-          title: const Text('Transfer Between Accounts'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: _fromAccountId,
-                  decoration: const InputDecoration(
-                      labelText: 'From Account',
-                      prefixIcon: Icon(Icons.arrow_upward_rounded)),
-                  items: _buildAccountDropdownItems(ref),
-                  onChanged: (v) {
-                    setInner(() => _fromAccountId = v);
-                    if (_toAccountId == v) setInner(() => _toAccountId = null);
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _toAccountId,
-                  decoration: const InputDecoration(
-                      labelText: 'To Account',
-                      prefixIcon: Icon(Icons.arrow_downward_rounded)),
-                  items: _buildAccountDropdownItems(ref,
-                      excludeId: _fromAccountId),
-                  onChanged: (v) => setInner(() => _toAccountId = v),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _amountCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                      labelText: 'Amount (৳)',
-                      prefixIcon: Icon(Icons.monetization_on_outlined)),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _noteCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'Note (optional)',
-                      prefixIcon: Icon(Icons.note_outlined)),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100));
-                    if (picked != null) setInner(() => _selectedDate = picked);
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                        labelText: 'Date',
-                        prefixIcon: Icon(Icons.calendar_today_outlined)),
-                    child: Text(
-                        '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
-                  ),
+        builder: (ctx, setInner) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.95, // ✅ 95% width
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).dialogBackgroundColor,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                if (_fromAccountId == null || _toAccountId == null) return;
-                final amount = double.tryParse(_amountCtrl.text.trim());
-                if (amount == null || amount <= 0) return;
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF378ADD).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.swap_horiz_rounded,
+                          color: Color(0xFF378ADD),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Transfer Money',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Move funds between accounts',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
 
-                // ✅ Pre-check balance before attempting transfer
-                final accounts = ref.read(accountProvider).value ?? [];
-                final fromAccount = accounts.firstWhere(
-                  (a) => a.id == _fromAccountId,
-                  orElse: () => AccountModel(
-                      id: '', name: '', balance: 0, createdAt: DateTime.now()),
-                );
+                  // From Account
+                  _buildLabel('From Account'),
+                  const SizedBox(height: 8),
+                  _buildDropdown(
+                    value: _fromAccountId,
+                    hint: 'Select source account',
+                    icon: Icons.arrow_upward_rounded,
+                    items: _buildAccountDropdownItems(ref),
+                    onChanged: (v) {
+                      setInner(() => _fromAccountId = v);
+                      if (_toAccountId == v)
+                        setInner(() => _toAccountId = null);
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-                if (amount > fromAccount.balance) {
-                  Navigator.pop(ctx); // Close dialog first
-                  _showInsufficientBalanceAlert(
-                    fromAccount.name,
-                    fromAccount.balance,
-                    amount,
-                  );
-                  return;
-                }
+                  // To Account
+                  _buildLabel('To Account'),
+                  const SizedBox(height: 8),
+                  _buildDropdown(
+                    value: _toAccountId,
+                    hint: 'Select destination account',
+                    icon: Icons.arrow_downward_rounded,
+                    items: _buildAccountDropdownItems(ref,
+                        excludeId: _fromAccountId),
+                    onChanged: (v) => setInner(() => _toAccountId = v),
+                  ),
+                  const SizedBox(height: 16),
 
-                Navigator.pop(ctx);
-                try {
-                  await ref.read(transferProvider.notifier).transfer(
-                        fromAccountId: _fromAccountId!,
-                        toAccountId: _toAccountId!,
-                        amount: amount,
-                        note: _noteCtrl.text.trim(),
-                        date: _selectedDate,
+                  // Amount
+                  _buildLabel('Amount'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: '0.00',
+                      prefixIcon: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF378ADD).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          '৳',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF378ADD),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      prefixIconConstraints:
+                          const BoxConstraints(minWidth: 0, minHeight: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Note
+                  _buildLabel('Note (Optional)'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _noteCtrl,
+                    maxLines: 1,
+                    decoration: InputDecoration(
+                      hintText: 'Add a note...',
+                      prefixIcon:
+                          const Icon(Icons.note_outlined, color: Colors.grey),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Date
+                  _buildLabel('Date'),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
                       );
-                  // Refresh accounts to show updated balances immediately
-                  ref.invalidate(accountProvider);
-                } catch (e) {
-                  if (ctx.mounted) {
-                    // Fallback for any other unexpected errors
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text('Error: ${e.toString()}')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Transfer'),
+                      if (picked != null)
+                        setInner(() => _selectedDate = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded,
+                              color: Colors.grey, size: 18),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: Colors.red.withOpacity(0.2),
+                            foregroundColor: Colors.red,
+                            elevation: 0,
+                            overlayColor: Colors.transparent, // ✅ Remove hover
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (_fromAccountId == null || _toAccountId == null)
+                              return;
+                            final amount =
+                                double.tryParse(_amountCtrl.text.trim());
+                            if (amount == null || amount <= 0) return;
+
+                            // ✅ Pre-check balance before attempting transfer
+                            final accounts =
+                                ref.read(accountProvider).value ?? [];
+                            final fromAccount = accounts.firstWhere(
+                              (a) => a.id == _fromAccountId,
+                              orElse: () => AccountModel(
+                                  id: '',
+                                  name: '',
+                                  balance: 0,
+                                  createdAt: DateTime.now()),
+                            );
+
+                            if (amount > fromAccount.balance) {
+                              Navigator.pop(ctx); // Close dialog first
+                              _showInsufficientBalanceAlert(
+                                fromAccount.name,
+                                fromAccount.balance,
+                                amount,
+                              );
+                              return;
+                            }
+
+                            Navigator.pop(ctx);
+                            try {
+                              await ref
+                                  .read(transferProvider.notifier)
+                                  .transfer(
+                                    fromAccountId: _fromAccountId!,
+                                    toAccountId: _toAccountId!,
+                                    amount: amount,
+                                    note: _noteCtrl.text.trim(),
+                                    date: _selectedDate,
+                                  );
+                              // Refresh accounts to show updated balances immediately
+                              ref.invalidate(accountProvider);
+                            } catch (e) {
+                              if (ctx.mounted) {
+                                // Fallback for any other unexpected errors
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Error: ${e.toString()}')),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor:
+                                const Color(0xFF378ADD).withOpacity(0.2),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            overlayColor: Colors.transparent, // ✅ Remove hover
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Transfer',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF378ADD)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String? value,
+    required String hint,
+    required IconData icon,
+    required List<DropdownMenuItem<String>> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.grey.shade600, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+      items: items,
+      onChanged: onChanged,
+      isExpanded: true,
+      dropdownColor: Theme.of(context).dialogBackgroundColor,
+      style: const TextStyle(fontSize: 14, color: Colors.black87),
+      icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
     );
   }
 

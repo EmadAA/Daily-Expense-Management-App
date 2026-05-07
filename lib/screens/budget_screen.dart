@@ -30,62 +30,231 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title:
-            Text(existingSector != null ? 'Edit Budget' : 'Set Budget Limit'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _sectorCtrl,
-              readOnly: existingSector != null,
-              decoration: const InputDecoration(
-                labelText: 'Sector name',
-                hintText: 'e.g. Food, Transport',
-                prefixIcon: Icon(Icons.label_outline),
-              ),
+      barrierColor: Colors.black38,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setInner) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).dialogBackgroundColor,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _amountCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Monthly limit (৳)',
-                prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _sectorCtrl.clear();
-              _amountCtrl.clear();
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_sectorCtrl.text.trim().isEmpty ||
-                  _amountCtrl.text.trim().isEmpty) return;
-              final amount = double.tryParse(_amountCtrl.text.trim());
-              if (amount == null || amount <= 0) return;
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7F77DD).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                        color: Color(0xFF7F77DD),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            existingSector != null
+                                ? 'Edit Budget'
+                                : 'Set Budget Limit',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Text(
+                            'Manage your monthly spending',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
 
-              await ref.read(budgetProvider.notifier).upsert(
-                    _sectorCtrl.text.trim(),
-                    amount,
-                  );
-              if (mounted) {
-                _sectorCtrl.clear();
-                _amountCtrl.clear();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
+                // Sector Name
+                const Text(
+                  'Sector Name',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _sectorCtrl,
+                  readOnly: existingSector != null,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Food, Transport',
+                    prefixIcon:
+                        const Icon(Icons.label_outline, color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Monthly Limit
+                const Text(
+                  'Monthly Limit',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _amountCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: '0.00',
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7F77DD).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        '৳',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF7F77DD),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    prefixIconConstraints:
+                        const BoxConstraints(minWidth: 0, minHeight: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                        child: ElevatedButton(
+                      onPressed: () {
+                        _sectorCtrl.clear();
+                        _amountCtrl.clear();
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: Colors.red.withOpacity(0.2),
+                        foregroundColor: Colors.red,
+                        elevation: 0,
+                        shadowColor: Colors.transparent,
+                        surfaceTintColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ).copyWith(
+                        overlayColor:
+                            WidgetStateProperty.all(Colors.transparent),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (_sectorCtrl.text.trim().isEmpty ||
+                              _amountCtrl.text.trim().isEmpty) return;
+                          final amount =
+                              double.tryParse(_amountCtrl.text.trim());
+                          if (amount == null || amount <= 0) return;
+
+                          await ref.read(budgetProvider.notifier).upsert(
+                                _sectorCtrl.text.trim(),
+                                amount,
+                              );
+                          if (mounted) {
+                            _sectorCtrl.clear();
+                            _amountCtrl.clear();
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor:
+                              const Color(0xFF7F77DD).withOpacity(0.2),
+                          foregroundColor: const Color(0xFF7F77DD),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          surfaceTintColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ).copyWith(
+                          overlayColor:
+                              WidgetStateProperty.all(Colors.transparent),
+                        ),
+                        child: const Text(
+                          'Save',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -110,7 +279,8 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(),
-        child: const Icon(Icons.add),
+        backgroundColor: const Color(0xFF7F77DD),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: budgetAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

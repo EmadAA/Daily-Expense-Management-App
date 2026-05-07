@@ -6,15 +6,16 @@ import 'package:intl/intl.dart';
 
 import '../models/expense_model.dart';
 import '../models/income_model.dart';
+import '../providers/account_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/currency_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/income_provider.dart';
 import '../providers/loan_provider.dart';
 import '../providers/recurring_provider.dart';
-import '../screens/account_screen.dart';
 import '../services/currency_rate_service.dart';
 import '../services/refresh_service.dart';
+import 'account_screen.dart';
 import 'all_transactions_screen.dart';
 import 'budget_screen.dart';
 import 'expense_list_screen.dart';
@@ -35,6 +36,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _balanceVisible = true;
+  bool _accountBalanceVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -124,8 +127,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               incomes: incomes,
               expenses: expenses,
               balanceVisible: _balanceVisible,
+              accountBalanceVisible: _accountBalanceVisible,
               onToggleBalance: () =>
                   setState(() => _balanceVisible = !_balanceVisible),
+              onToggleAccountBalance: () => setState(
+                  () => _accountBalanceVisible = !_accountBalanceVisible),
             ),
           ),
         ),
@@ -138,13 +144,17 @@ class _Body extends ConsumerWidget {
   final List<IncomeModel> incomes;
   final List<ExpenseModel> expenses;
   final bool balanceVisible;
+  final bool accountBalanceVisible;
   final VoidCallback onToggleBalance;
+  final VoidCallback onToggleAccountBalance;
 
   const _Body({
     required this.incomes,
     required this.expenses,
     required this.balanceVisible,
+    required this.accountBalanceVisible,
     required this.onToggleBalance,
+    required this.onToggleAccountBalance,
   });
 
   @override
@@ -185,7 +195,7 @@ class _Body extends ConsumerWidget {
       'Loan Repaid',
     };
 
-// Balance uses ALL entries including loans (keeps balance correct)
+    // Balance uses ALL entries including loans (keeps balance correct)
     double convertedIncome = incomes.fold(0.0, (sum, i) {
       return sum +
           convertAmount(
@@ -206,7 +216,7 @@ class _Body extends ConsumerWidget {
           );
     });
 
-// Displayed totals EXCLUDE loan entries
+    // Displayed totals EXCLUDE loan entries
     double displayIncome =
         incomes.where((i) => !loanSectors.contains(i.sector)).fold(
             0.0,
@@ -238,8 +248,16 @@ class _Body extends ConsumerWidget {
         .where((t) => (t['date'] as DateTime).isAfter(oneWeekAgo))
         .toList();
 
+    // Calculate total account balance
+    final accountAsync = ref.watch(accountProvider);
+    final accounts = accountAsync.value ?? [];
+    final totalAccountBalance = accounts.fold(
+      0.0,
+      (sum, account) => sum + account.balance,
+    );
+
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(5),
       children: [
         // ── Balance card ──────────────────────────
         Card(
@@ -251,7 +269,7 @@ class _Body extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Current Balance',
+                    Text('Current Cash Balance',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 14,
@@ -281,6 +299,70 @@ class _Body extends ConsumerWidget {
                     letterSpacing: balanceVisible ? 0 : 4,
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                // ── Account Balance Summary ──────────────────────────
+                GestureDetector(
+                  onTap: onToggleAccountBalance,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.account_balance_wallet,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              accountBalanceVisible
+                                  ? 'Balance in Accounts'
+                                  : 'View Balance in Accounts',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withOpacity(0.9),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          accountBalanceVisible
+                              ? '$symbol ${fmt.format(totalAccountBalance)}'
+                              : '→',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontSize: accountBalanceVisible ? 15 : 16,
+                            fontWeight: accountBalanceVisible
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // ── End Account Balance Summary ──────────────────────
+
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -442,8 +524,6 @@ class _Body extends ConsumerWidget {
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const AccountsScreen())),
             ),
-            const SizedBox(width: 12),
-            // Keep existing Transfer placeholder or add another feature
           ],
         ),
         const SizedBox(height: 12),
@@ -468,6 +548,7 @@ class _Body extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: 12),
 
         // ── Recent 7 days ─────────────────────────
         Row(
@@ -526,6 +607,7 @@ class _Body extends ConsumerWidget {
     return list;
   }
 }
+
 // ── Small widgets ──────────────────────────────────────
 
 class _BalancePill extends StatelessWidget {
