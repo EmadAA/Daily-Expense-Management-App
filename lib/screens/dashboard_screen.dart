@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/expense_model.dart';
 import '../models/income_model.dart';
@@ -36,16 +37,54 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _balanceVisible = true;
+  DateTime _selectedMonth = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+    _loadMonthPreference();
     Future.microtask(() async {
       if (!mounted) return;
       await ref.read(recurringProvider.notifier).processDue();
       if (!mounted) return;
       ref.invalidate(incomeProvider);
       ref.invalidate(expenseProvider);
+    });
+  }
+
+  Future<void> _loadMonthPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedMonth = prefs.getString('selectedMonth');
+    if (savedMonth != null) {
+      setState(() {
+        _selectedMonth = DateTime.parse(savedMonth);
+      });
+    }
+  }
+
+  Future<void> _saveMonthPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedMonth', _selectedMonth.toIso8601String());
+  }
+
+  void _previousMonth() {
+    setState(() {
+      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+      _saveMonthPreference();
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+      _saveMonthPreference();
+    });
+  }
+
+  void _goToCurrentMonth() {
+    setState(() {
+      _selectedMonth = DateTime.now();
+      _saveMonthPreference();
     });
   }
 
@@ -123,11 +162,104 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               incomes: incomes,
               expenses: expenses,
               balanceVisible: _balanceVisible,
+              selectedMonth: _selectedMonth,
               onToggleBalance: () =>
                   setState(() => _balanceVisible = !_balanceVisible),
+              onPreviousMonth: _previousMonth,
+              onNextMonth: _nextMonth,
+              onGoToCurrentMonth: _goToCurrentMonth,
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Month Selector Widget ────────────────────────────────────────────────────
+class _MonthSelector extends StatelessWidget {
+  final DateTime selectedMonth;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onCurrent;
+
+  const _MonthSelector({
+    required this.selectedMonth,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onCurrent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrentMonth = DateTime.now().year == selectedMonth.year &&
+        DateTime.now().month == selectedMonth.month;
+    final monthFormat = DateFormat('MMMM yyyy');
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, size: 20),
+            onPressed: onPrevious,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  monthFormat.format(selectedMonth),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (!isCurrentMonth)
+                  GestureDetector(
+                    onTap: onCurrent,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Back to Current',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, size: 20),
+            onPressed: onNext,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        ],
       ),
     );
   }
@@ -147,6 +279,8 @@ class _BalanceCard extends StatefulWidget {
   final VoidCallback onToggleBalance;
   final String symbol;
   final NumberFormat fmt;
+  final bool isMonthly;
+  final DateTime? monthDate;
 
   const _BalanceCard({
     required this.cashBalance,
@@ -160,6 +294,8 @@ class _BalanceCard extends StatefulWidget {
     required this.onToggleBalance,
     required this.symbol,
     required this.fmt,
+    this.isMonthly = false,
+    this.monthDate,
   });
 
   @override
@@ -168,7 +304,6 @@ class _BalanceCard extends StatefulWidget {
 
 class _BalanceCardState extends State<_BalanceCard>
     with SingleTickerProviderStateMixin {
-  // 0 = cash, 1 = account, 2 = total
   int _view = 0;
   late AnimationController _ctrl;
   late Animation<double> _fadeAnim;
@@ -202,14 +337,22 @@ class _BalanceCardState extends State<_BalanceCard>
   }
 
   String get _currentLabel {
+    String baseLabel;
     switch (_view) {
       case 1:
-        return 'Account Balance';
+        baseLabel = 'Account Balance';
+        break;
       case 2:
-        return 'Total Balance';
+        baseLabel = 'Total Balance';
+        break;
       default:
-        return 'Cash Balance';
+        baseLabel = 'Cash Balance';
     }
+
+    if (widget.isMonthly) {
+      return baseLabel;
+    }
+    return baseLabel;
   }
 
   double get _currentAmount {
@@ -236,20 +379,41 @@ class _BalanceCardState extends State<_BalanceCard>
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ── Label + eye ────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 150),
-                  child: Text(
-                    _currentLabel,
-                    key: ValueKey(_view),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontSize: 14,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.isMonthly && widget.monthDate != null)
+                      Text(
+                        DateFormat('MMMM yyyy').format(widget.monthDate!),
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withOpacity(0.8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    if (widget.isMonthly && widget.monthDate != null)
+                      const SizedBox(height: 2),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 150),
+                      child: Text(
+                        _currentLabel,
+                        key: ValueKey(_view),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: widget.isMonthly ? 13 : 14,
+                          fontWeight: widget.isMonthly
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 GestureDetector(
                   onTap: widget.onToggleBalance,
@@ -267,8 +431,6 @@ class _BalanceCardState extends State<_BalanceCard>
               ],
             ),
             const SizedBox(height: 8),
-
-            // ── Main balance amount ────────────────
             FadeTransition(
               opacity: _fadeAnim,
               child: SlideTransition(
@@ -277,16 +439,14 @@ class _BalanceCardState extends State<_BalanceCard>
                   vis ? '$symbol ${fmt.format(_currentAmount)}' : '****',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 32,
+                    fontSize: widget.isMonthly ? 28 : 32,
                     fontWeight: FontWeight.bold,
                     letterSpacing: vis ? 0 : 4,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
-            // ── Three tap toggles ──────────────────
+            SizedBox(height: widget.isMonthly ? 12 : 16),
             Row(
               children: [
                 _ViewToggle(
@@ -312,8 +472,6 @@ class _BalanceCardState extends State<_BalanceCard>
               ],
             ),
             const SizedBox(height: 16),
-
-            // ── Income / Expense pills ─────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -333,10 +491,9 @@ class _BalanceCardState extends State<_BalanceCard>
                 ),
               ],
             ),
-
-            // ── Loan pending section ───────────────
-            if (widget.totalLentRemaining > 0 ||
-                widget.totalBorrowedRemaining > 0) ...[
+            if (!widget.isMonthly &&
+                (widget.totalLentRemaining > 0 ||
+                    widget.totalBorrowedRemaining > 0)) ...[
               const SizedBox(height: 12),
               Container(
                 padding:
@@ -407,7 +564,6 @@ class _BalanceCardState extends State<_BalanceCard>
   }
 }
 
-// Small toggle button inside the card
 class _ViewToggle extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -462,19 +618,272 @@ class _ViewToggle extends StatelessWidget {
   }
 }
 
+class _BalancePill extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+
+  const _BalancePill({
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(label, style: TextStyle(color: color, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text(amount,
+            style: TextStyle(
+                color: color, fontSize: 15, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+// ── Collapsible Dual Balance Section ────────────────────────────────────────
+class _DualBalanceSection extends StatefulWidget {
+  final double allTimeCash;
+  final double allTimeAccount;
+  final double allTimeTotal;
+  final double allTimeIncome;
+  final double allTimeExpense;
+  final double allTimeLentRemaining;
+  final double allTimeBorrowedRemaining;
+
+  final double monthlyCash;
+  final double monthlyAccount;
+  final double monthlyTotal;
+  final double monthlyIncome;
+  final double monthlyExpense;
+
+  final bool balanceVisible;
+  final VoidCallback onToggleBalance;
+  final String symbol;
+  final NumberFormat fmt;
+  final DateTime selectedMonth;
+
+  const _DualBalanceSection({
+    required this.allTimeCash,
+    required this.allTimeAccount,
+    required this.allTimeTotal,
+    required this.allTimeIncome,
+    required this.allTimeExpense,
+    required this.allTimeLentRemaining,
+    required this.allTimeBorrowedRemaining,
+    required this.monthlyCash,
+    required this.monthlyAccount,
+    required this.monthlyTotal,
+    required this.monthlyIncome,
+    required this.monthlyExpense,
+    required this.balanceVisible,
+    required this.onToggleBalance,
+    required this.symbol,
+    required this.fmt,
+    required this.selectedMonth,
+  });
+
+  @override
+  State<_DualBalanceSection> createState() => _DualBalanceSectionState();
+}
+
+class _DualBalanceSectionState extends State<_DualBalanceSection>
+    with SingleTickerProviderStateMixin {
+  bool _allTimeExpanded = false;
+  late AnimationController _expandCtrl;
+  late Animation<double> _expandAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _expandCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _expandAnim = CurvedAnimation(
+      parent: _expandCtrl,
+      curve: Curves.easeInOut,
+    );
+    _loadPreference();
+  }
+
+  Future<void> _loadPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool('showAllTimeBalance');
+    if (saved != null && mounted) {
+      setState(() {
+        _allTimeExpanded = saved;
+        if (_allTimeExpanded) {
+          _expandCtrl.value = 1.0;
+        }
+      });
+    }
+  }
+
+  Future<void> _savePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('showAllTimeBalance', _allTimeExpanded);
+  }
+
+  @override
+  void dispose() {
+    _expandCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleAllTime() {
+    setState(() {
+      _allTimeExpanded = !_allTimeExpanded;
+      if (_allTimeExpanded) {
+        _expandCtrl.forward();
+      } else {
+        _expandCtrl.reverse();
+      }
+      _savePreference();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _BalanceCard(
+          cashBalance: widget.monthlyCash,
+          accountBalance: widget.monthlyAccount,
+          totalBalance: widget.monthlyTotal,
+          displayIncome: widget.monthlyIncome,
+          displayExpense: widget.monthlyExpense,
+          totalLentRemaining: 0,
+          totalBorrowedRemaining: 0,
+          balanceVisible: widget.balanceVisible,
+          onToggleBalance: widget.onToggleBalance,
+          symbol: widget.symbol,
+          fmt: widget.fmt,
+          isMonthly: true,
+          monthDate: widget.selectedMonth,
+        ),
+        const SizedBox(height: 12),
+        AnimatedBuilder(
+          animation: _expandAnim,
+          builder: (context, child) {
+            return ClipRect(
+              child: Align(
+                heightFactor: _expandAnim.value,
+                child: child,
+              ),
+            );
+          },
+          child: Column(
+            children: [
+              _BalanceCard(
+                cashBalance: widget.allTimeCash,
+                accountBalance: widget.allTimeAccount,
+                totalBalance: widget.allTimeTotal,
+                displayIncome: widget.allTimeIncome,
+                displayExpense: widget.allTimeExpense,
+                totalLentRemaining: widget.allTimeLentRemaining,
+                totalBorrowedRemaining: widget.allTimeBorrowedRemaining,
+                balanceVisible: widget.balanceVisible,
+                onToggleBalance: widget.onToggleBalance,
+                symbol: widget.symbol,
+                fmt: widget.fmt,
+                isMonthly: false,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: InkWell(
+            onTap: _toggleAllTime,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: _allTimeExpanded
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _allTimeExpanded
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                      : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedRotation(
+                    turns: _allTimeExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: _allTimeExpanded
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _allTimeExpanded
+                        ? 'Hide All-Time Summary'
+                        : 'Show All-Time Summary',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _allTimeExpanded
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Icon(
+                    _allTimeExpanded
+                        ? Icons.visibility
+                        : Icons.visibility_off_outlined,
+                    size: 18,
+                    color: _allTimeExpanded
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Body ──────────────────────────────────────────────────────────────────────
 
 class _Body extends ConsumerWidget {
   final List<IncomeModel> incomes;
   final List<ExpenseModel> expenses;
   final bool balanceVisible;
+  final DateTime selectedMonth;
   final VoidCallback onToggleBalance;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
+  final VoidCallback onGoToCurrentMonth;
 
   const _Body({
     required this.incomes,
     required this.expenses,
     required this.balanceVisible,
+    required this.selectedMonth,
     required this.onToggleBalance,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
+    required this.onGoToCurrentMonth,
   });
 
   @override
@@ -495,7 +904,6 @@ class _Body extends ConsumerWidget {
     final fmt = NumberFormat('#,##0.00');
     final symbol = CurrencyRateService.symbolFor(selectedCurrency);
 
-    // Loans
     final loanAsync = ref.watch(loanProvider);
     final loans = loanAsync.value ?? [];
     final totalLentRemaining = loans
@@ -505,7 +913,6 @@ class _Body extends ConsumerWidget {
         .where((l) => !l.isLent && !l.isSettled)
         .fold(0.0, (sum, l) => sum + l.remaining);
 
-    // Loan sectors to exclude from display totals
     const loanSectors = {
       'Loan Given',
       'Loan Received',
@@ -513,8 +920,7 @@ class _Body extends ConsumerWidget {
       'Loan Repaid',
     };
 
-    // Full income/expense for balance calculation
-    double convertedIncome = incomes.fold(
+    double allTimeConvertedIncome = incomes.fold(
         0.0,
         (sum, i) =>
             sum +
@@ -523,7 +929,7 @@ class _Body extends ConsumerWidget {
                 fromCurrency: i.currency,
                 toCurrency: selectedCurrency,
                 rates: rates));
-    double convertedExpense = expenses.fold(
+    double allTimeConvertedExpense = expenses.fold(
         0.0,
         (sum, e) =>
             sum +
@@ -533,8 +939,7 @@ class _Body extends ConsumerWidget {
                 toCurrency: selectedCurrency,
                 rates: rates));
 
-    // Display totals exclude loan entries
-    double displayIncome = incomes
+    double allTimeDisplayIncome = incomes
         .where((i) => !loanSectors.contains(i.sector))
         .fold(
             0.0,
@@ -545,7 +950,7 @@ class _Body extends ConsumerWidget {
                     fromCurrency: i.currency,
                     toCurrency: selectedCurrency,
                     rates: rates));
-    double displayExpense = expenses
+    double allTimeDisplayExpense = expenses
         .where((e) => !loanSectors.contains(e.sector))
         .fold(
             0.0,
@@ -557,16 +962,51 @@ class _Body extends ConsumerWidget {
                     toCurrency: selectedCurrency,
                     rates: rates));
 
-    // Account balance
     final accountAsync = ref.watch(accountProvider);
     final accounts = accountAsync.value ?? [];
     final accountBalance = accounts.fold(0.0, (sum, a) => sum + a.balance);
 
-    // Cash balance = income - expense (no accounts)
-    final cashBalance = convertedIncome - convertedExpense - accountBalance;
+    final allTimeCashBalance =
+        allTimeConvertedIncome - allTimeConvertedExpense - accountBalance;
+    final allTimeTotalBalance = allTimeCashBalance + accountBalance;
 
-    // Total = cash + accounts
-    final totalBalance = cashBalance + accountBalance;
+    final monthlyIncomes = incomes
+        .where((i) =>
+            i.date.year == selectedMonth.year &&
+            i.date.month == selectedMonth.month)
+        .toList();
+    final monthlyExpenses = expenses
+        .where((e) =>
+            e.date.year == selectedMonth.year &&
+            e.date.month == selectedMonth.month)
+        .toList();
+
+    double monthlyIncome = monthlyIncomes
+        .where((i) => !loanSectors.contains(i.sector))
+        .fold(
+            0.0,
+            (sum, i) =>
+                sum +
+                convertAmount(
+                    amount: i.amount,
+                    fromCurrency: i.currency,
+                    toCurrency: selectedCurrency,
+                    rates: rates));
+
+    double monthlyExpense = monthlyExpenses
+        .where((e) => !loanSectors.contains(e.sector))
+        .fold(
+            0.0,
+            (sum, e) =>
+                sum +
+                convertAmount(
+                    amount: e.amount,
+                    fromCurrency: e.currency,
+                    toCurrency: selectedCurrency,
+                    rates: rates));
+
+    final monthlyCashBalance = monthlyIncome - monthlyExpense;
+    final monthlyTotalBalance = monthlyCashBalance;
 
     final oneWeekAgo = DateTime.now().subtract(const Duration(days: 7));
     final recent = _mergeAndSort(incomes, expenses)
@@ -574,143 +1014,180 @@ class _Body extends ConsumerWidget {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(0),
       children: [
-        // ── Balance card ──────────────────────────
-        _BalanceCard(
-          cashBalance: cashBalance,
-          accountBalance: accountBalance,
-          totalBalance: totalBalance,
-          displayIncome: displayIncome,
-          displayExpense: displayExpense,
-          totalLentRemaining: totalLentRemaining,
-          totalBorrowedRemaining: totalBorrowedRemaining,
+        const SizedBox(height: 12),
+        _MonthSelector(
+          selectedMonth: selectedMonth,
+          onPrevious: onPreviousMonth,
+          onNext: onNextMonth,
+          onCurrent: onGoToCurrentMonth,
+        ),
+        _DualBalanceSection(
+          allTimeCash: allTimeCashBalance,
+          allTimeAccount: accountBalance,
+          allTimeTotal: allTimeTotalBalance,
+          allTimeIncome: allTimeDisplayIncome,
+          allTimeExpense: allTimeDisplayExpense,
+          allTimeLentRemaining: totalLentRemaining,
+          allTimeBorrowedRemaining: totalBorrowedRemaining,
+          monthlyCash: monthlyCashBalance,
+          monthlyAccount: 0,
+          monthlyTotal: monthlyTotalBalance,
+          monthlyIncome: monthlyIncome,
+          monthlyExpense: monthlyExpense,
           balanceVisible: balanceVisible,
           onToggleBalance: onToggleBalance,
           symbol: symbol,
           fmt: fmt,
+          selectedMonth: selectedMonth,
         ),
         const SizedBox(height: 20),
-
-        // ── Nav buttons ───────────────────────────
-        Row(
-          children: [
-            _NavButton(
-              label: 'Income',
-              icon: Icons.arrow_downward_rounded,
-              color: const Color(0xFF1D9E75),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const IncomeListScreen())),
-            ),
-            const SizedBox(width: 12),
-            _NavButton(
-              label: 'Expense',
-              icon: Icons.arrow_upward_rounded,
-              color: const Color(0xFFD85A30),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ExpenseListScreen())),
-            ),
-            const SizedBox(width: 12),
-            _NavButton(
-              label: 'Summary',
-              icon: Icons.bar_chart_rounded,
-              color: const Color(0xFF378ADD),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const SummaryScreen())),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _NavButton(
-              label: 'Budget',
-              icon: Icons.account_balance_wallet_outlined,
-              color: const Color(0xFF7F77DD),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const BudgetScreen())),
-            ),
-            const SizedBox(width: 12),
-            _NavButton(
-              label: 'Recurring',
-              icon: Icons.repeat,
-              color: const Color(0xFF5DCAA5),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const RecurringScreen())),
-            ),
-            const SizedBox(width: 12),
-            _NavButton(
-              label: 'All',
-              icon: Icons.list_alt_rounded,
-              color: const Color(0xFF888780),
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const AllTransactionsScreen())),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _NavButton(
-              label: 'Accounts',
-              icon: Icons.account_balance_wallet,
-              color: const Color(0xFF378ADD),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const AccountsScreen())),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _NavButton(
-              label: 'Goals',
-              icon: Icons.track_changes_rounded,
-              color: const Color(0xFF1D9E75),
-              onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const SavingsGoalsScreen())),
-            ),
-            const SizedBox(width: 12),
-            _NavButton(
-              label: 'Loans',
-              icon: Icons.handshake_outlined,
-              color: const Color(0xFFD85A30),
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const LoansScreen())),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ── Recent 7 days ─────────────────────────
-        Row(
-          children: [
-            Text('Recent Transactions',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  _NavButton(
+                    label: 'Income',
+                    icon: Icons.arrow_downward_rounded,
+                    color: const Color(0xFF1D9E75),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const IncomeListScreen())),
+                  ),
+                  const SizedBox(width: 12),
+                  _NavButton(
+                    label: 'Expense',
+                    icon: Icons.arrow_upward_rounded,
+                    color: const Color(0xFFD85A30),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ExpenseListScreen())),
+                  ),
+                  const SizedBox(width: 12),
+                  _NavButton(
+                    label: 'Summary',
+                    icon: Icons.bar_chart_rounded,
+                    color: const Color(0xFF378ADD),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SummaryScreen())),
+                  ),
+                ],
               ),
-              child: const Text('Last 7 days', style: TextStyle(fontSize: 11)),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _NavButton(
+                    label: 'Budget',
+                    icon: Icons.account_balance_wallet_outlined,
+                    color: const Color(0xFF7F77DD),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const BudgetScreen())),
+                  ),
+                  const SizedBox(width: 12),
+                  _NavButton(
+                    label: 'Recurring',
+                    icon: Icons.repeat,
+                    color: const Color(0xFF5DCAA5),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const RecurringScreen())),
+                  ),
+                  const SizedBox(width: 12),
+                  _NavButton(
+                    label: 'All',
+                    icon: Icons.list_alt_rounded,
+                    color: const Color(0xFF888780),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AllTransactionsScreen())),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _NavButton(
+                    label: 'Accounts',
+                    icon: Icons.account_balance_wallet,
+                    color: const Color(0xFF378ADD),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AccountsScreen())),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _NavButton(
+                    label: 'Goals',
+                    icon: Icons.track_changes_rounded,
+                    color: const Color(0xFF1D9E75),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SavingsGoalsScreen())),
+                  ),
+                  const SizedBox(width: 12),
+                  _NavButton(
+                    label: 'Loans',
+                    icon: Icons.handshake_outlined,
+                    color: const Color(0xFFD85A30),
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const LoansScreen())),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          child: Row(
+            children: [
+              Text('Recent Transactions',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child:
+                    const Text('Last 7 days', style: TextStyle(fontSize: 11)),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 8),
-
         if (recent.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(child: Text('No transactions in the last 7 days.')),
           )
         else
-          ...recent.map((t) => _TransactionTile(transaction: t)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Column(
+              children:
+                  recent.map((t) => _TransactionTile(transaction: t)).toList(),
+            ),
+          ),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -741,33 +1218,6 @@ class _Body extends ConsumerWidget {
     list.sort(
         (a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
     return list;
-  }
-}
-
-// ── Small widgets ──────────────────────────────────────
-
-class _BalancePill extends StatelessWidget {
-  final String label;
-  final String amount;
-  final Color color;
-
-  const _BalancePill({
-    required this.label,
-    required this.amount,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(label, style: TextStyle(color: color, fontSize: 12)),
-        const SizedBox(height: 4),
-        Text(amount,
-            style: TextStyle(
-                color: color, fontSize: 15, fontWeight: FontWeight.bold)),
-      ],
-    );
   }
 }
 
@@ -825,6 +1275,7 @@ class _TransactionTile extends StatelessWidget {
     final dateStr = '${date.day}/${date.month}/${date.year}';
 
     return Card(
+      margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor:
