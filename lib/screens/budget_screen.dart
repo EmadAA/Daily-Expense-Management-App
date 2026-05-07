@@ -91,12 +91,6 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(ctx),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 24),

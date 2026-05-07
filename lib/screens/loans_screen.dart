@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -43,6 +45,8 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
     super.dispose();
   }
 
+  Color _parseColor(String hex) =>
+      Color(int.parse(hex.replaceFirst('#', '0xFF')));
   void _showAddDialog() {
     _nameCtrl.clear();
     _amountCtrl.clear();
@@ -52,179 +56,303 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
 
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setInner) => AlertDialog(
-          title: const Text('Add Loan / Debt'),
-          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Type toggle
-                Row(
+      barrierColor: Colors.black38,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setInner) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).dialogBackgroundColor,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                // ✅ Added scrollable
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('I Borrowed'),
-                        selected: _type == 'borrowed',
-                        selectedColor: const Color(0xFFD85A30),
-                        labelStyle: TextStyle(
-                          color: _type == 'borrowed' ? Colors.white : null,
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          // ✅ Allow title to flex
+                          child: Text(
+                            'Add Loan / Debt',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.visible,
+                          ),
                         ),
-                        onSelected: (_) => setInner(() => _type = 'borrowed'),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Track money you borrowed or lent to others.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setInner(() => _type = 'borrowed'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _type == 'borrowed'
+                                    ? const Color(0xFFD85A30)
+                                    : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (_type == 'borrowed')
+                                    const Icon(Icons.check,
+                                        color: Colors.white, size: 18),
+                                  if (_type == 'borrowed')
+                                    const SizedBox(width: 6),
+                                  Text(
+                                    'I Borrowed',
+                                    style: TextStyle(
+                                      color: _type == 'borrowed'
+                                          ? Colors.white
+                                          : Colors.grey.shade700,
+                                      fontWeight: _type == 'borrowed'
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setInner(() => _type = 'lent'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _type == 'lent'
+                                    ? const Color(0xFF1D9E75)
+                                    : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (_type == 'lent')
+                                    const Icon(Icons.check,
+                                        color: Colors.white, size: 18),
+                                  if (_type == 'lent') const SizedBox(width: 6),
+                                  Text(
+                                    'I Lent',
+                                    style: TextStyle(
+                                      color: _type == 'lent'
+                                          ? Colors.white
+                                          : Colors.grey.shade700,
+                                      fontWeight: _type == 'lent'
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _nameCtrl,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: _type == 'lent'
+                            ? 'Lent to (name)'
+                            : 'Borrowed from (name)',
+                        prefixIcon: const Icon(Icons.person_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: const Text('I Lent'),
-                        selected: _type == 'lent',
-                        selectedColor: const Color(0xFF1D9E75),
-                        labelStyle: TextStyle(
-                          color: _type == 'lent' ? Colors.white : null,
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _amountCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Amount (৳)',
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          child: Text('৳',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
                         ),
-                        onSelected: (_) => setInner(() => _type = 'lent'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _noteCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Note (optional)',
+                        prefixIcon: const Icon(Icons.edit_note_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate:
+                              DateTime.now().add(const Duration(days: 7)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setInner(() => _dueDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Due date (optional)',
+                          prefixIcon: const Icon(Icons.date_range_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                        ),
+                        child: Text(
+                          _dueDate != null
+                              ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
+                              : 'No due date',
+                          style: TextStyle(
+                            color: _dueDate != null
+                                ? null
+                                : Theme.of(ctx).colorScheme.outline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (_nameCtrl.text.trim().isEmpty ||
+                              _amountCtrl.text.trim().isEmpty) return;
+                          final amount =
+                              double.tryParse(_amountCtrl.text.trim());
+                          if (amount == null || amount <= 0) return;
+
+                          Navigator.pop(ctx);
+
+                          final loan = LoanModel(
+                            id: '',
+                            type: _type,
+                            personName: _nameCtrl.text.trim(),
+                            amount: amount,
+                            paidAmount: 0,
+                            dueDate: _dueDate,
+                            note: _noteCtrl.text.trim(),
+                            createdAt: DateTime.now(),
+                          );
+
+                          final loanId =
+                              await ref.read(loanProvider.notifier).add(loan);
+
+                          if (_type == 'lent') {
+                            await ref.read(expenseProvider.notifier).add(
+                                  ExpenseModel(
+                                    id: '',
+                                    sector: 'Loan Given',
+                                    details: 'Lent to ${_nameCtrl.text.trim()}'
+                                        '${_noteCtrl.text.trim().isNotEmpty ? ' — ${_noteCtrl.text.trim()}' : ''}',
+                                    amount: amount,
+                                    date: DateTime.now(),
+                                    currency: 'BDT',
+                                    sourceType: 'loan',
+                                    sourceId: loanId,
+                                  ),
+                                );
+                          } else {
+                            await ref.read(incomeProvider.notifier).add(
+                                  IncomeModel(
+                                    id: '',
+                                    sector: 'Loan Borrowed',
+                                    details:
+                                        'Borrowed from ${_nameCtrl.text.trim()}'
+                                        '${_noteCtrl.text.trim().isNotEmpty ? ' — ${_noteCtrl.text.trim()}' : ''}',
+                                    amount: amount,
+                                    date: DateTime.now(),
+                                    currency: 'BDT',
+                                    sourceType: 'loan',
+                                    sourceId: loanId,
+                                  ),
+                                );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          backgroundColor: _type == 'lent'
+                              ? const Color(0xFF1D9E75)
+                              : const Color(0xFFD85A30),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Save',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-
-                // Name
-                TextField(
-                  controller: _nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: _type == 'lent'
-                        ? 'Lent to (name)'
-                        : 'Borrowed from (name)',
-                    prefixIcon: const Icon(Icons.person_outline),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Amount
-                TextField(
-                  controller: _amountCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Amount (৳)',
-                    prefixIcon: Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      child: Text('৳',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Note
-                TextField(
-                  controller: _noteCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Note (optional)',
-                    prefixIcon: Icon(Icons.edit_note_outlined),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Due date
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: DateTime.now().add(const Duration(days: 7)),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setInner(() => _dueDate = picked);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Due date (optional)',
-                      prefixIcon: Icon(Icons.date_range_outlined),
-                    ),
-                    child: Text(
-                      _dueDate != null
-                          ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
-                          : 'No due date',
-                      style: TextStyle(
-                        color: _dueDate != null
-                            ? null
-                            : Theme.of(ctx).colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_nameCtrl.text.trim().isEmpty ||
-                    _amountCtrl.text.trim().isEmpty) return;
-                final amount = double.tryParse(_amountCtrl.text.trim());
-                if (amount == null || amount <= 0) return;
-
-                // Close dialog FIRST before any async work
-                Navigator.pop(context);
-
-                final loan = LoanModel(
-                  id: '',
-                  type: _type,
-                  personName: _nameCtrl.text.trim(),
-                  amount: amount,
-                  paidAmount: 0,
-                  dueDate: _dueDate,
-                  note: _noteCtrl.text.trim(),
-                  createdAt: DateTime.now(),
-                );
-
-                final loanId = await ref.read(loanProvider.notifier).add(loan);
-
-                if (_type == 'lent') {
-                  await ref.read(expenseProvider.notifier).add(
-                        ExpenseModel(
-                          id: '',
-                          sector: 'Loan Given',
-                          details: 'Lent to ${_nameCtrl.text.trim()}'
-                              '${_noteCtrl.text.trim().isNotEmpty ? ' — ${_noteCtrl.text.trim()}' : ''}',
-                          amount: amount,
-                          date: DateTime.now(),
-                          currency: 'BDT',
-                          sourceType: 'loan',
-                          sourceId: loanId,
-                        ),
-                      );
-                } else {
-                  await ref.read(incomeProvider.notifier).add(
-                        IncomeModel(
-                          id: '',
-                          sector: 'Loan Borrowed',
-                          details: 'Borrowed from ${_nameCtrl.text.trim()}'
-                              '${_noteCtrl.text.trim().isNotEmpty ? ' — ${_noteCtrl.text.trim()}' : ''}',
-                          amount: amount,
-                          date: DateTime.now(),
-                          currency: 'BDT',
-                          sourceType: 'loan',
-                          sourceId: loanId,
-                        ),
-                      );
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
         ),
       ),
     );
@@ -234,69 +362,190 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
     _paidCtrl.clear();
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title:
-            Text(loan.isLent ? '${loan.personName} paid back' : 'I paid back'),
-        content: TextField(
-          controller: _paidCtrl,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText:
-                'Amount (remaining: ৳ ${NumberFormat('#,##0.00').format(loan.remaining)})',
-            prefixIcon: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Text('৳',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      barrierColor: Colors.black38,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 24,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).dialogBackgroundColor,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              // ✅ Added scrollable
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        // ✅ Allow title to flex
+                        child: Text(
+                          loan.isLent ? 'Receive Payment' : 'Make Payment',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_outlined),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    loan.isLent
+                        ? '${loan.personName} paying back'
+                        : 'Paying back to ${loan.personName}',
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (loan.isLent
+                              ? const Color(0xFF1D9E75)
+                              : const Color(0xFFD85A30))
+                          .withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: loan.isLent
+                              ? const Color(0xFF1D9E75)
+                              : const Color(0xFFD85A30),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Remaining: ৳ ${NumberFormat('#,##0.00').format(loan.remaining)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: loan.isLent
+                                  ? const Color(0xFF1D9E75)
+                                  : const Color(0xFFD85A30),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _paidCtrl,
+                    autofocus: true,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Amount (৳)',
+                      prefixIcon: const Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        child: Text('৳',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final amount = double.tryParse(_paidCtrl.text.trim());
+                        if (amount == null || amount <= 0) return;
+
+                        Navigator.pop(ctx);
+
+                        await ref
+                            .read(loanProvider.notifier)
+                            .markPaid(loan.id, amount);
+
+                        if (loan.isLent) {
+                          await ref.read(incomeProvider.notifier).add(
+                                IncomeModel(
+                                  id: '',
+                                  sector: 'Loan Received',
+                                  details: 'Paid back by ${loan.personName}',
+                                  amount: amount,
+                                  date: DateTime.now(),
+                                  currency: 'BDT',
+                                  sourceType: 'loan_repayment',
+                                  sourceId: loan.id,
+                                ),
+                              );
+                        } else {
+                          await ref.read(expenseProvider.notifier).add(
+                                ExpenseModel(
+                                  id: '',
+                                  sector: 'Loan Repaid',
+                                  details: 'Paid back to ${loan.personName}',
+                                  amount: amount,
+                                  date: DateTime.now(),
+                                  currency: 'BDT',
+                                  sourceType: 'loan_repayment',
+                                  sourceId: loan.id,
+                                ),
+                              );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        backgroundColor: loan.isLent
+                            ? const Color(0xFF1D9E75)
+                            : const Color(0xFFD85A30),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Confirm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(_paidCtrl.text.trim());
-              if (amount == null || amount <= 0) return;
-
-              // Close dialog FIRST before any async work
-              Navigator.pop(context);
-
-              await ref.read(loanProvider.notifier).markPaid(loan.id, amount);
-
-              if (loan.isLent) {
-                await ref.read(incomeProvider.notifier).add(
-                      IncomeModel(
-                        id: '',
-                        sector: 'Loan Received',
-                        details: 'Paid back by ${loan.personName}',
-                        amount: amount,
-                        date: DateTime.now(),
-                        currency: 'BDT',
-                        sourceType: 'loan_repayment',
-                        sourceId: loan.id,
-                      ),
-                    );
-              } else {
-                await ref.read(expenseProvider.notifier).add(
-                      ExpenseModel(
-                        id: '',
-                        sector: 'Loan Repaid',
-                        details: 'Paid back to ${loan.personName}',
-                        amount: amount,
-                        date: DateTime.now(),
-                        currency: 'BDT',
-                        sourceType: 'loan_repayment',
-                        sourceId: loan.id,
-                      ),
-                    );
-              }
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
       ),
     );
   }

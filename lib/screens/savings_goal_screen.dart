@@ -50,130 +50,220 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
 
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setInner) => AlertDialog(
-          title: const Text('New Savings Goal'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _titleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Goal title',
-                    hintText: 'e.g. New Phone, Vacation',
-                    prefixIcon: Icon(Icons.flag_outlined),
+      barrierColor: Colors.black38,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setInner) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).dialogBackgroundColor,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 24,
+                    offset: Offset(0, 10),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _targetCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Target amount (৳)',
-                    prefixIcon: Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      child: Text('৳',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Deadline
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: DateTime.now().add(const Duration(days: 30)),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setInner(() => _deadline = picked);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Deadline (optional)',
-                      prefixIcon: Icon(Icons.date_range_outlined),
-                    ),
-                    child: Text(
-                      _deadline != null
-                          ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
-                          : 'No deadline',
-                      style: TextStyle(
-                        color: _deadline != null
-                            ? null
-                            : Theme.of(ctx).colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Color
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Color', style: TextStyle(fontSize: 13)),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  children: _colorOptions.map((c) {
-                    final selected = _color == c;
-                    return GestureDetector(
-                      onTap: () => setInner(() => _color = c),
-                      child: Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: _parseColor(c),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: selected ? Colors.white : Colors.transparent,
-                            width: 2,
+                ],
+              ),
+              child: SingleChildScrollView(
+                // ✅ Added scrollable
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          // ✅ Allow title to flex
+                          child: Text(
+                            'New Savings Goal',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.visible,
                           ),
                         ),
-                        child: selected
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 16)
-                            : null,
+                        IconButton(
+                          icon: const Icon(Icons.close_outlined),
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Set a target and track your savings progress.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _titleCtrl,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: 'Goal title',
+                        hintText: 'e.g. New Phone, Vacation',
+                        prefixIcon: const Icon(Icons.flag_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
                       ),
-                    );
-                  }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _targetCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'Target amount (৳)',
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          child: Text(
+                            '৳',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: ctx,
+                          initialDate:
+                              DateTime.now().add(const Duration(days: 30)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setInner(() => _deadline = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Deadline (optional)',
+                          prefixIcon: const Icon(Icons.date_range_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                        ),
+                        child: Text(
+                          _deadline != null
+                              ? '${_deadline!.day}/${_deadline!.month}/${_deadline!.year}'
+                              : 'No deadline',
+                          style: TextStyle(
+                            color: _deadline != null
+                                ? null
+                                : Theme.of(ctx).colorScheme.outline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Choose a color',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: _colorOptions.map((c) {
+                        final selected = _color == c;
+                        final color = _parseColor(c);
+                        return GestureDetector(
+                          onTap: () => setInner(() => _color = c),
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: selected
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: selected
+                                ? const Icon(Icons.check,
+                                    color: Colors.white, size: 18)
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (_titleCtrl.text.trim().isEmpty ||
+                              _targetCtrl.text.trim().isEmpty) return;
+                          final target =
+                              double.tryParse(_targetCtrl.text.trim());
+                          if (target == null || target <= 0) return;
+
+                          Navigator.pop(ctx);
+                          await ref.read(savingsGoalProvider.notifier).add(
+                                SavingsGoalModel(
+                                  id: '',
+                                  title: _titleCtrl.text.trim(),
+                                  targetAmount: target,
+                                  savedAmount: 0,
+                                  deadline: _deadline,
+                                  color: _color,
+                                ),
+                              );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          backgroundColor: const Color(0xFF1D9E75),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Create Goal',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_titleCtrl.text.trim().isEmpty ||
-                    _targetCtrl.text.trim().isEmpty) return;
-                final target = double.tryParse(_targetCtrl.text.trim());
-                if (target == null || target <= 0) return;
-
-                await ref.read(savingsGoalProvider.notifier).add(
-                      SavingsGoalModel(
-                        id: '',
-                        title: _titleCtrl.text.trim(),
-                        targetAmount: target,
-                        savedAmount: 0,
-                        deadline: _deadline,
-                        color: _color,
-                      ),
-                    );
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Create Goal'),
-            ),
-          ],
         ),
       ),
     );
@@ -183,54 +273,117 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
     _addCtrl.clear();
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Add to "${goal.title}"'),
-        content: TextField(
-          controller: _addCtrl,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Amount to add (৳)',
-            prefixIcon: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Text('৳',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
+      barrierColor: Colors.black38,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).dialogBackgroundColor,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Add to "${goal.title}"',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_outlined),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Target: ৳ ${NumberFormat('#,##0.00').format(goal.targetAmount)}',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _addCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Amount to add (৳)',
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Text(
+                      '৳',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final amount = double.tryParse(_addCtrl.text.trim());
+                    if (amount == null || amount <= 0) return;
+
+                    Navigator.pop(ctx);
+                    await ref
+                        .read(savingsGoalProvider.notifier)
+                        .addToSaved(goal.id, amount);
+
+                    await ref.read(expenseProvider.notifier).add(
+                          ExpenseModel(
+                            id: '',
+                            sector: 'Savings',
+                            details: 'Added to goal: ${goal.title}',
+                            amount: amount,
+                            date: DateTime.now(),
+                            currency: 'BDT',
+                            sourceType: 'goal',
+                            sourceId: goal.id,
+                          ),
+                        );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    backgroundColor: _parseColor(goal.color),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Add Money',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(_addCtrl.text.trim());
-              if (amount == null || amount <= 0) return;
-
-              await ref
-                  .read(savingsGoalProvider.notifier)
-                  .addToSaved(goal.id, amount);
-
-              // Auto-create expense with source info
-              await ref.read(expenseProvider.notifier).add(
-                    ExpenseModel(
-                      id: '',
-                      sector: 'Savings',
-                      details: 'Added to goal: ${goal.title}',
-                      amount: amount,
-                      date: DateTime.now(),
-                      currency: 'BDT',
-                      sourceType: 'goal', // ← add
-                      sourceId: goal.id, // ← add
-                    ),
-                  );
-
-              if (mounted) Navigator.pop(context);
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }
@@ -290,11 +443,9 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // ← wrap in Expanded so long titles don't overflow
                           Expanded(
                             child: Row(
                               children: [
@@ -318,8 +469,7 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                                       fontSize: 16,
                                     ),
                                     maxLines: 2,
-                                    overflow: TextOverflow
-                                        .ellipsis, // ← truncate if too long
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -349,7 +499,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                                 icon: const Icon(Icons.delete_outline,
                                     color: Colors.red, size: 20),
                                 onPressed: () async {
-                                  // Show confirmation first
                                   final confirm = await showDialog<bool>(
                                     context: context,
                                     builder: (_) => AlertDialog(
@@ -389,8 +538,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
-                      // Amounts
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -409,8 +556,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-
-                      // Progress bar
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
@@ -421,8 +566,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                         ),
                       ),
                       const SizedBox(height: 6),
-
-                      // Stats row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -446,8 +589,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
-                      // Add money button
                       if (!goal.isCompleted)
                         SizedBox(
                           width: double.infinity,
@@ -456,7 +597,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                             icon: const Icon(Icons.add, size: 18),
                             label: const Text('Add Money'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: color,
                               side: BorderSide(color: color),
                             ),
                           ),

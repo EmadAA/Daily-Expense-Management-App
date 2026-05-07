@@ -43,8 +43,11 @@ class _RecurringScreenState extends ConsumerState<RecurringScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setInner) => Dialog(
           backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width * 0.05,
+            vertical: MediaQuery.of(context).size.height * 0.075,
+          ),
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Theme.of(context).dialogBackgroundColor,
@@ -98,12 +101,6 @@ class _RecurringScreenState extends ConsumerState<RecurringScreen> {
                             ),
                           ],
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Navigator.pop(ctx),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),

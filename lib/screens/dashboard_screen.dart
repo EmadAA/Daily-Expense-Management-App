@@ -231,7 +231,7 @@ class _BalanceCardState extends State<_BalanceCard>
 
     return Card(
       color: Theme.of(context).colorScheme.primary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -241,7 +241,7 @@ class _BalanceCardState extends State<_BalanceCard>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
+                  duration: const Duration(milliseconds: 150),
                   child: Text(
                     _currentLabel,
                     key: ValueKey(_view),
@@ -574,7 +574,7 @@ class _Body extends ConsumerWidget {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.all(5),
+      padding: const EdgeInsets.all(15),
       children: [
         // ── Balance card ──────────────────────────
         _BalanceCard(
