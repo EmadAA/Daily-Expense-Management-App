@@ -218,6 +218,70 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     return list;
   }
 
+  // New method to group transactions by date
+  List<Map<String, dynamic>> _buildGroupedList(
+      List<Map<String, dynamic>> transactions) {
+    if (transactions.isEmpty) return [];
+
+    final grouped = <String, List<Map<String, dynamic>>>{};
+
+    for (final transaction in transactions) {
+      final date = transaction['date'] as DateTime;
+      final dateKey = DateFormat('yyyy-MM-dd').format(date);
+
+      if (!grouped.containsKey(dateKey)) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey]!.add(transaction);
+    }
+
+    final result = <Map<String, dynamic>>[];
+
+    // Sort dates
+    final sortedDates = grouped.keys.toList()
+      ..sort((a, b) {
+        final dateA = DateTime.parse(a);
+        final dateB = DateTime.parse(b);
+        return _sortOrder == 'Oldest'
+            ? dateA.compareTo(dateB)
+            : dateB.compareTo(dateA);
+      });
+
+    for (final dateKey in sortedDates) {
+      // Add divider header
+      final date = DateTime.parse(dateKey);
+      final formattedDate = _getFormattedDate(date);
+
+      result.add({
+        'isDivider': true,
+        'date': date,
+        'formattedDate': formattedDate,
+      });
+
+      // Add transactions for this date
+      for (final transaction in grouped[dateKey]!) {
+        result.add(transaction);
+      }
+    }
+
+    return result;
+  }
+
+  String _getFormattedDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    final transactionDate = DateTime(date.year, date.month, date.day);
+
+    if (transactionDate == today) {
+      return 'Today';
+    } else if (transactionDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('EEEE, MMMM d, yyyy').format(date);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final incomeAsync = ref.watch(incomeProvider);
@@ -246,6 +310,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (expenses) {
             final list = _buildList(incomes, expenses);
+            final groupedList = _buildGroupedList(list);
 
             return Column(
               children: [
@@ -460,22 +525,83 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                 ),
                 const SizedBox(height: 4),
 
-                // ── Transaction list ────────────────
+                // ── Transaction list with dividers ───
                 Expanded(
-                  child: list.isEmpty
+                  child: groupedList.isEmpty
                       ? const Center(child: Text('No transactions found.'))
                       : ListView.builder(
-                          itemCount: list.length,
+                          itemCount: groupedList.length,
                           itemBuilder: (context, index) {
-                            final t = list[index];
-                            final isIncome = t['type'] == 'income';
+                            final item = groupedList[index];
+
+                            // Check if this is a divider
+                            if (item['isDivider'] == true) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline
+                                          .withOpacity(0.2),
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        item['formattedDate'],
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${groupedList.where((e) => e['isDivider'] != true && e['date'] != null && DateFormat('yyyy-MM-dd').format(e['date'] as DateTime) == DateFormat('yyyy-MM-dd').format(item['date'] as DateTime)).length} items',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            // Regular transaction item
+                            final isIncome = item['type'] == 'income';
                             final color = isIncome
                                 ? const Color(0xFF1D9E75)
                                 : const Color(0xFFD85A30);
                             final bgColor = isIncome
                                 ? const Color(0xFFEAF3DE)
                                 : const Color(0xFFFAECE7);
-                            final date = t['date'] as DateTime;
+                            final date = item['date'] as DateTime;
                             final dateStr =
                                 '${date.day}/${date.month}/${date.year}';
 
@@ -493,7 +619,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                     size: 18,
                                   ),
                                 ),
-                                title: Text(t['sector'],
+                                title: Text(item['sector'],
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w500),
                                     maxLines: 1,
@@ -501,8 +627,8 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if ((t['details'] as String).isNotEmpty)
-                                      Text(t['details'],
+                                    if ((item['details'] as String).isNotEmpty)
+                                      Text(item['details'],
                                           style: const TextStyle(fontSize: 12),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
@@ -512,9 +638,9 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                   ],
                                 ),
                                 isThreeLine:
-                                    (t['details'] as String).isNotEmpty,
+                                    (item['details'] as String).isNotEmpty,
                                 trailing: Text(
-                                  '${isIncome ? '+' : '-'} ৳ ${fmt.format(t['amount'])}',
+                                  '${isIncome ? '+' : '-'} ৳ ${fmt.format(item['amount'])}',
                                   style: TextStyle(
                                     color: color,
                                     fontWeight: FontWeight.bold,

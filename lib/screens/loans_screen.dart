@@ -32,7 +32,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -47,6 +47,104 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
 
   Color _parseColor(String hex) =>
       Color(int.parse(hex.replaceFirst('#', '0xFF')));
+
+  String _getFormattedDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    final transactionDate = DateTime(date.year, date.month, date.day);
+
+    if (transactionDate == today) {
+      return 'Today';
+    } else if (transactionDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('EEEE, MMMM d, yyyy').format(date);
+    }
+  }
+
+  List<Widget> _buildGroupedLoanList(List<LoanModel> loans) {
+    if (loans.isEmpty) return [];
+
+    // Group loans by date
+    final Map<String, List<LoanModel>> groupedLoans = {};
+
+    for (final loan in loans) {
+      final dateKey = DateFormat('yyyy-MM-dd').format(loan.createdAt);
+      if (!groupedLoans.containsKey(dateKey)) {
+        groupedLoans[dateKey] = [];
+      }
+      groupedLoans[dateKey]!.add(loan);
+    }
+
+    // Sort dates
+    final sortedDates = groupedLoans.keys.toList()
+      ..sort((a, b) {
+        return b.compareTo(a); // Newest first
+      });
+
+    final List<Widget> widgets = [];
+
+    for (final dateKey in sortedDates) {
+      final date = DateTime.parse(dateKey);
+      final formattedDate = _getFormattedDate(date);
+      final loansOnDate = groupedLoans[dateKey]!;
+
+      // Add date divider
+      widgets.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              bottom: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${loansOnDate.length} item${loansOnDate.length != 1 ? 's' : ''}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Add loans for this date
+      for (final loan in loansOnDate) {
+        widgets.add(_buildLoanCard(loan));
+      }
+    }
+
+    return widgets;
+  }
+
   void _showAddDialog() {
     _nameCtrl.clear();
     _amountCtrl.clear();
@@ -74,16 +172,15 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
               decoration: BoxDecoration(
                 color: Theme.of(context).dialogBackgroundColor,
                 borderRadius: BorderRadius.circular(28),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 24,
-                    offset: const Offset(0, 10),
+                    offset: Offset(0, 10),
                   ),
                 ],
               ),
               child: SingleChildScrollView(
-                // ✅ Added scrollable
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +189,6 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          // ✅ Allow title to flex
                           child: Text(
                             'Add Loan / Debt',
                             style: TextStyle(
@@ -105,7 +201,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(
+                    const Text(
                       'Track money you borrowed or lent to others.',
                       style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
@@ -388,7 +484,6 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
               ],
             ),
             child: SingleChildScrollView(
-              // ✅ Added scrollable
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +492,6 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        // ✅ Allow title to flex
                         child: Text(
                           loan.isLent ? 'Receive Payment' : 'Make Payment',
                           style: TextStyle(
@@ -559,41 +653,44 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
         loan.amount > 0 ? (loan.paidAmount / loan.amount).clamp(0.0, 1.0) : 0.0;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: bgColor,
-                      child: Text(
-                        loan.personName[0].toUpperCase(),
-                        style: TextStyle(
-                            color: color, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(loan.personName,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 15)),
-                        Text(
-                          isLent ? 'I lent' : 'I borrowed',
-                          style: TextStyle(color: color, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ],
+                CircleAvatar(
+                  backgroundColor: bgColor,
+                  child: Text(
+                    loan.personName[0].toUpperCase(),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loan.personName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 15),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        isLent ? 'I lent' : 'I borrowed',
+                        style: TextStyle(color: color, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     if (loan.isSettled)
                       Container(
@@ -613,7 +710,33 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                       icon: const Icon(Icons.delete_outline,
                           color: Colors.red, size: 20),
                       onPressed: () async {
-                        await ref.read(loanProvider.notifier).delete(loan.id);
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Delete Record'),
+                            content: Text(
+                              'Delete ${loan.isLent ? 'lent' : 'borrowed'} record for ${loan.personName}?\n\nThis will also remove related transactions.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await ref.read(loanProvider.notifier).delete(loan.id);
+                        }
                       },
                     ),
                   ],
@@ -624,17 +747,22 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '৳ ${fmt.format(loan.amount)}',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Expanded(
+                  child: Text(
+                    '৳ ${fmt.format(loan.amount)}',
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   'Remaining: ৳ ${fmt.format(loan.remaining)}',
                   style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -650,10 +778,14 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
             ),
             if (loan.note.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(loan.note,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(
+                loan.note,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
-            if (loan.dueDate != null) ...[
+            if (loan.dueDate != null && !loan.isSettled) ...[
               const SizedBox(height: 6),
               Row(
                 children: [
@@ -665,15 +797,38 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                         : Colors.grey,
                   ),
                   const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Due: ${loan.dueDate!.day}/${loan.dueDate!.month}/${loan.dueDate!.year}'
+                      '${loan.daysUntilDue != null ? "  (${loan.daysUntilDue! > 0 ? '${loan.daysUntilDue} days left' : 'Overdue!'})" : ''}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color:
+                            loan.daysUntilDue != null && loan.daysUntilDue! <= 3
+                                ? Colors.red
+                                : Colors.grey,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (loan.dueDate != null && loan.isSettled) ...[
+              const SizedBox(height: 6),
+              const Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 12,
+                    color: Colors.green,
+                  ),
+                  SizedBox(width: 4),
                   Text(
-                    'Due: ${loan.dueDate!.day}/${loan.dueDate!.month}/${loan.dueDate!.year}'
-                    '${loan.daysUntilDue != null ? "  (${loan.daysUntilDue! > 0 ? '${loan.daysUntilDue} days left' : 'Overdue!'})" : ''}',
+                    'Settled on time',
                     style: TextStyle(
                       fontSize: 11,
-                      color:
-                          loan.daysUntilDue != null && loan.daysUntilDue! <= 3
-                              ? Colors.red
-                              : Colors.grey,
+                      color: Colors.green,
                     ),
                   ),
                 ],
@@ -712,6 +867,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
           tabs: const [
             Tab(text: 'I Borrowed'),
             Tab(text: 'I Lent'),
+            Tab(text: 'Settled'),
           ],
         ),
         actions: [
@@ -730,23 +886,37 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (loans) {
-          final borrowed = loans.where((l) => l.type == 'borrowed').toList();
-          final lent = loans.where((l) => l.type == 'lent').toList();
+          final borrowed =
+              loans.where((l) => l.type == 'borrowed' && !l.isSettled).toList();
+          final lent =
+              loans.where((l) => l.type == 'lent' && !l.isSettled).toList();
+          final settled = loans.where((l) => l.isSettled).toList();
 
           return TabBarView(
             controller: _tabController,
             children: [
+              // I Borrowed Tab
               borrowed.isEmpty
                   ? const Center(child: Text('No borrowed records.'))
                   : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: borrowed.map(_buildLoanCard).toList(),
+                      padding: const EdgeInsets.only(top: 8, bottom: 16),
+                      children: _buildGroupedLoanList(borrowed),
                     ),
+
+              // I Lent Tab
               lent.isEmpty
                   ? const Center(child: Text('No lent records.'))
                   : ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: lent.map(_buildLoanCard).toList(),
+                      padding: const EdgeInsets.only(top: 8, bottom: 16),
+                      children: _buildGroupedLoanList(lent),
+                    ),
+
+              // Settled Tab
+              settled.isEmpty
+                  ? const Center(child: Text('No settled records.'))
+                  : ListView(
+                      padding: const EdgeInsets.only(top: 8, bottom: 16),
+                      children: _buildGroupedLoanList(settled),
                     ),
             ],
           );

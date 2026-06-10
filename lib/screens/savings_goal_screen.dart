@@ -22,6 +22,9 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
   DateTime? _deadline;
   String _color = '#1D9E75';
 
+  // Tab controller
+  int _selectedTabIndex = 0; // 0 = Active, 1 = Completed
+
   static const _colorOptions = [
     '#1D9E75',
     '#378ADD',
@@ -77,7 +80,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                 ],
               ),
               child: SingleChildScrollView(
-                // ✅ Added scrollable
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +88,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Expanded(
-                          // ✅ Allow title to flex
                           child: Text(
                             'New Savings Goal',
                             style: TextStyle(
@@ -299,7 +300,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
               ],
             ),
             child: SingleChildScrollView(
-              // ✅ Added scrollable
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -308,7 +308,6 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        // ✅ Allow title to flex
                         child: Text(
                           'Add to "${goal.title}"',
                           style: const TextStyle(
@@ -316,15 +315,14 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                           overflow: TextOverflow.visible,
-                          maxLines: 2, // ✅ Allow 2 lines if needed
+                          maxLines: 2,
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close_outlined),
                         onPressed: () => Navigator.pop(ctx),
-                        padding: EdgeInsets.zero, // ✅ Remove extra padding
-                        constraints:
-                            const BoxConstraints(), // ✅ Fix constraints
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
@@ -425,27 +423,137 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
             onPressed: () => refreshAll(ref),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedTabIndex = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _selectedTabIndex == 0
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.play_circle_outline,
+                            size: 18,
+                            color: _selectedTabIndex == 0
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Active',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: _selectedTabIndex == 0
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedTabIndex = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _selectedTabIndex == 1
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                            color: _selectedTabIndex == 1
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Completed',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: _selectedTabIndex == 1
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddGoalDialog,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _selectedTabIndex == 0
+          ? FloatingActionButton(
+              onPressed: _showAddGoalDialog,
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: goalsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (goals) {
-          if (goals.isEmpty) {
+          // Filter goals based on selected tab
+          final filteredGoals = _selectedTabIndex == 0
+              ? goals.where((g) => !g.isCompleted).toList()
+              : goals.where((g) => g.isCompleted).toList();
+
+          if (filteredGoals.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.track_changes_outlined,
-                      size: 64, color: Theme.of(context).colorScheme.outline),
+                  Icon(
+                    _selectedTabIndex == 0
+                        ? Icons.track_changes_outlined
+                        : Icons.check_circle_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   const SizedBox(height: 16),
-                  const Text('No savings goals yet.'),
-                  const SizedBox(height: 8),
-                  const Text('Tap + to create one.',
-                      style: TextStyle(color: Colors.grey)),
+                  Text(
+                    _selectedTabIndex == 0
+                        ? 'No active savings goals yet.'
+                        : 'No completed savings goals yet.',
+                  ),
+                  if (_selectedTabIndex == 0) ...[
+                    const SizedBox(height: 8),
+                    const Text('Tap + to create one.',
+                        style: TextStyle(color: Colors.grey)),
+                  ],
                 ],
               ),
             );
@@ -453,9 +561,9 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: goals.length,
+            itemCount: filteredGoals.length,
             itemBuilder: (context, index) {
-              final goal = goals[index];
+              final goal = filteredGoals[index];
               final color = _parseColor(goal.color);
 
               return Card(
@@ -559,59 +667,59 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '৳ ${fmt.format(goal.savedAmount)} saved',
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'of ৳ ${fmt.format(goal.targetAmount)}',
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: goal.percentage,
-                          backgroundColor: color.withOpacity(0.12),
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                          minHeight: 10,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${(goal.percentage * 100).toStringAsFixed(1)}%  ·  ৳ ${fmt.format(goal.remaining)} left',
-                            style: const TextStyle(
-                                fontSize: 11, color: Colors.grey),
-                          ),
-                          if (goal.daysLeft != null)
+                      if (!goal.isCompleted) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Text(
-                              goal.daysLeft! > 0
-                                  ? '${goal.daysLeft} days left'
-                                  : 'Deadline passed',
+                              '৳ ${fmt.format(goal.savedAmount)} saved',
                               style: TextStyle(
-                                fontSize: 11,
-                                color: goal.daysLeft! <= 7
-                                    ? Colors.red
-                                    : Colors.grey,
+                                color: color,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (!goal.isCompleted)
+                            Text(
+                              'of ৳ ${fmt.format(goal.targetAmount)}',
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: goal.percentage,
+                            backgroundColor: color.withOpacity(0.12),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                            minHeight: 10,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${(goal.percentage * 100).toStringAsFixed(1)}%  ·  ৳ ${fmt.format(goal.remaining)} left',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Colors.grey),
+                            ),
+                            if (goal.daysLeft != null)
+                              Text(
+                                goal.daysLeft! > 0
+                                    ? '${goal.daysLeft} days left'
+                                    : 'Deadline passed',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: goal.daysLeft! <= 7
+                                      ? Colors.red
+                                      : Colors.grey,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
@@ -623,6 +731,80 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                             ),
                           ),
                         ),
+                      ] else ...[
+                        // For completed goals - show summary
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Total Saved',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '৳ ${fmt.format(goal.savedAmount)}',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: color,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    'Target',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '৳ ${fmt.format(goal.targetAmount)}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (goal.deadline != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today,
+                                  size: 14, color: Colors.grey.shade600),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Completed before ${DateFormat('dd MMM yyyy').format(goal.deadline!)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ],
                   ),
                 ),

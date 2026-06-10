@@ -343,7 +343,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
         data: (accounts) {
           return Column(
             children: [
-              //  Transfer Button (Moved below AppBar)
+              // Transfer Button (Moved below AppBar)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: InkWell(
@@ -364,23 +364,28 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF378ADD).withOpacity(0.2),
-                                shape: BoxShape.circle,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF378ADD).withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.swap_horiz,
+                                    color: Color(0xFF378ADD), size: 20),
                               ),
-                              child: const Icon(Icons.swap_horiz,
-                                  color: Color(0xFF378ADD), size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text('Transfer Balances',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF378ADD))),
-                          ],
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text('Transfer Balances',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF378ADD)),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
                         ),
                         const Icon(Icons.arrow_forward_ios,
                             size: 14, color: Color(0xFF378ADD)),
@@ -420,82 +425,100 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(children: [
-                                          CircleAvatar(
-                                              backgroundColor:
-                                                  color.withOpacity(0.15),
-                                              child: Icon(
-                                                  Icons.account_balance_wallet,
-                                                  color: color)),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                              child: Text(acc.name,
-                                                  style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize: 16))),
-                                          Text('৳ ${fmt.format(acc.balance)}',
-                                              style: TextStyle(
-                                                  color: color,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 18))
-                                        ]),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            CircleAvatar(
+                                                backgroundColor:
+                                                    color.withOpacity(0.15),
+                                                child: Icon(
+                                                    Icons.account_balance_wallet,
+                                                    color: color)),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      acc.name,
+                                                      style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontSize: 16),
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      '৳ ${fmt.format(acc.balance)}',
+                                                      style: TextStyle(
+                                                          color: color,
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 18),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                         const SizedBox(height: 16),
-                                        Row(children: [
-                                          Expanded(
-                                            child: OutlinedButton.icon(
-                                              onPressed: () =>
-                                                  _showTransactionDialog(acc,
-                                                      isDeposit: true),
-                                              icon: const Icon(
-                                                  Icons.arrow_downward,
-                                                  size: 16),
-                                              label: const Text(
-                                                'Deposit',
-                                                style: TextStyle(fontSize: 13),
-                                                maxLines: 1,
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                foregroundColor:
-                                                    const Color(0xFF1D9E75),
-                                                side: const BorderSide(
-                                                    color: Color(0xFF1D9E75)),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 12),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: OutlinedButton.icon(
-                                              onPressed: () =>
-                                                  _showTransactionDialog(acc,
-                                                      isDeposit: false),
-                                              icon: const Icon(
-                                                  Icons.arrow_upward,
-                                                  size: 16),
-                                              label: const Text(
-                                                'Withdraw',
-                                                style: TextStyle(fontSize: 13),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              style: OutlinedButton.styleFrom(
-                                                foregroundColor:
-                                                    const Color(0xFFD85A30),
-                                                side: const BorderSide(
-                                                    color: Color(0xFFD85A30)),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 12),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    _showTransactionDialog(acc,
+                                                        isDeposit: true),
+                                                icon: const Icon(
+                                                    Icons.arrow_downward,
+                                                    size: 16),
+                                                label: const Text(
+                                                  'Deposit',
+                                                  style: TextStyle(fontSize: 13),
+                                                  maxLines: 1,
+                                                ),
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor:
+                                                      const Color(0xFF1D9E75),
+                                                  side: const BorderSide(
+                                                      color: Color(0xFF1D9E75)),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 12),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          IconButton(
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                onPressed: () =>
+                                                    _showTransactionDialog(acc,
+                                                        isDeposit: false),
+                                                icon: const Icon(
+                                                    Icons.arrow_upward,
+                                                    size: 16),
+                                                label: const Text(
+                                                  'Withdraw',
+                                                  style: TextStyle(fontSize: 13),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor:
+                                                      const Color(0xFFD85A30),
+                                                  side: const BorderSide(
+                                                      color: Color(0xFFD85A30)),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 12),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            IconButton(
                                               icon: const Icon(
                                                   Icons.delete_outline,
                                                   color: Colors.red,
@@ -542,8 +565,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                                                   ref.invalidate(
                                                       expenseProvider);
                                                 }
-                                              })
-                                        ]),
+                                              },
+                                            ),
+                                          ],
+                                        ),
                                       ])));
                         },
                       ),

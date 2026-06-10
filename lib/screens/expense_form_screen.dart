@@ -212,26 +212,30 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                           color: Colors.white, size: 24),
                     ),
                     const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isEditing
-                              ? 'Edit expense entry'
-                              : 'New expense entry',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Fill in the details below',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.75),
-                              fontSize: 12),
-                        ),
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _isEditing
+                                ? 'Edit expense entry'
+                                : 'New expense entry',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Fill in the details below',
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.75),
+                                fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -261,7 +265,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               _buildField(
                 child: TextFormField(
                   controller: _detailsCtrl,
-                  maxLines: 2,
+                  maxLines: 1,
                   decoration: _fieldDecoration(
                     label: 'Details',
                     hint: 'e.g. Lunch at restaurant',
@@ -277,6 +281,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
 
               // Amount + Currency row
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     flex: 3,
@@ -320,11 +325,16 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                           icon: Icons.currency_exchange,
                         ),
                         isDense: true,
+                        isExpanded: true,
+                        iconSize: 20,
                         items: CurrencyRateService.supported
                             .map((c) => DropdownMenuItem(
                                   value: c,
-                                  child: Text(c,
-                                      style: const TextStyle(fontSize: 13)),
+                                  child: Text(
+                                    c,
+                                    style: const TextStyle(fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ))
                             .toList(),
                         onChanged: (v) => setState(() => _currency = v!),
@@ -474,13 +484,16 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       children: [
         Icon(icon, size: 16, color: _coral),
         const SizedBox(width: 6),
-        Text(
-          text,
-          style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: _coral,
-              letterSpacing: 0.5),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _coral,
+                letterSpacing: 0.5),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -512,6 +525,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
+      hintStyle: const TextStyle(fontSize: 13),
       prefixIcon: prefix != null
           ? Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -544,6 +558,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       filled: true,
       fillColor: Colors.transparent,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      isDense: true,
     );
   }
 }
