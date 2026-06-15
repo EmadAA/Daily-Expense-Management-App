@@ -177,6 +177,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
               'Loan Borrowed',
               'Loan Given',
               'Loan Repaid',
+              'Loan Received',
             };
 
             final filteredIncomes =

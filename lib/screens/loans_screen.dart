@@ -602,8 +602,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                                   amount: amount,
                                   date: DateTime.now(),
                                   currency: 'BDT',
-                                  category:
-                                      'Loan Borrowed', // Income category for repayment received
+                                  category: 'Loan Received',
                                   sourceType: 'loan_repayment',
                                   sourceId: loan.id,
                                 ),

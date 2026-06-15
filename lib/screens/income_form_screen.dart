@@ -31,6 +31,7 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
     'Business',
     'Gift',
     'Loan Borrowed',
+    'Loan Received',
     'Other'
   ];
 
@@ -301,8 +302,9 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
                     );
                   }).toList(),
                   onChanged: (v) => setState(() => _category = v!),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Please select a category' : null,
+                  validator: (v) => v == null || v.isEmpty
+                      ? 'Please select a category'
+                      : null,
                 ),
               ),
               const SizedBox(height: 12),
@@ -540,6 +542,9 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
         break;
       case 'Gift':
         iconData = Icons.card_giftcard;
+        break;
+      case 'Loan Received': // Added this
+        iconData = Icons.assignment_turned_in;
         break;
       default:
         iconData = Icons.category;

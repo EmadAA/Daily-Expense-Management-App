@@ -27,22 +27,26 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
   DateTime? _selectedMonth;
 
   // Category filter options
-  static const List<Map<String, dynamic>> _categoryFilters = [
-    {'label': 'All', 'icon': Icons.list_alt_rounded, 'value': 'All'},
-    {'label': 'Loan', 'icon': Icons.handshake_outlined, 'value': 'Loan'},
-    {'label': 'Savings', 'icon': Icons.savings, 'value': 'Savings'},
-    {'label': 'Food', 'icon': Icons.restaurant, 'value': 'Food'},
-    {'label': 'Groceries', 'icon': Icons.shopping_cart, 'value': 'Groceries'},
-    {'label': 'Salary', 'icon': Icons.work, 'value': 'Salary'},
-    {'label': 'Gift', 'icon': Icons.card_giftcard, 'value': 'Gift'},
-    {'label': 'Others', 'icon': Icons.category, 'value': 'Other'},
-  ];
+static const List<Map<String, dynamic>> _categoryFilters = [
+  {'label': 'All', 'icon': Icons.list_alt_rounded, 'value': 'All'},
+  {'label': 'Loan', 'icon': Icons.handshake_outlined, 'value': 'Loan'},
+  {'label': 'Savings', 'icon': Icons.savings, 'value': 'Savings'},
+  {'label': 'Food', 'icon': Icons.restaurant, 'value': 'Food'},
+  {'label': 'Groceries', 'icon': Icons.shopping_cart, 'value': 'Groceries'},
+  {'label': 'Salary', 'icon': Icons.work, 'value': 'Salary'},
+  {'label': 'Bonus', 'icon': Icons.card_giftcard, 'value': 'Bonus'},
+  {'label': 'Freelance', 'icon': Icons.computer, 'value': 'Freelance Project'},
+  {'label': 'Business', 'icon': Icons.business_center, 'value': 'Business'},
+  {'label': 'Gift', 'icon': Icons.card_giftcard, 'value': 'Gift'},
+  {'label': 'Others', 'icon': Icons.category, 'value': 'Other'},
+];
 
   // Loan-related categories
   static const List<String> _loanCategories = [
     'Loan Borrowed',
     'Loan Given',
     'Loan Repaid',
+    'Loan Received', 
   ];
 
   // Savings category
