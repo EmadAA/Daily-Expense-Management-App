@@ -22,31 +22,47 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
   final _searchCtrl = TextEditingController();
   String _searchText = '';
   String _filterType = 'All';
-  String _filterCategory = 'All'; // All, Loan, Goal, Savings, or specific categories
+  String _filterCategory = 'All';
   String _sortOrder = 'Oldest';
   DateTime? _selectedMonth;
 
-  // Category filter options
-static const List<Map<String, dynamic>> _categoryFilters = [
-  {'label': 'All', 'icon': Icons.list_alt_rounded, 'value': 'All'},
-  {'label': 'Loan', 'icon': Icons.handshake_outlined, 'value': 'Loan'},
-  {'label': 'Savings', 'icon': Icons.savings, 'value': 'Savings'},
-  {'label': 'Food', 'icon': Icons.restaurant, 'value': 'Food'},
-  {'label': 'Groceries', 'icon': Icons.shopping_cart, 'value': 'Groceries'},
-  {'label': 'Salary', 'icon': Icons.work, 'value': 'Salary'},
-  {'label': 'Bonus', 'icon': Icons.card_giftcard, 'value': 'Bonus'},
-  {'label': 'Freelance', 'icon': Icons.computer, 'value': 'Freelance Project'},
-  {'label': 'Business', 'icon': Icons.business_center, 'value': 'Business'},
-  {'label': 'Gift', 'icon': Icons.card_giftcard, 'value': 'Gift'},
-  {'label': 'Others', 'icon': Icons.category, 'value': 'Other'},
-];
+  // Category filter options - Updated with all categories
+  static const List<Map<String, dynamic>> _categoryFilters = [
+    {'label': 'All', 'icon': Icons.list_alt_rounded, 'value': 'All'},
+    {'label': 'Loan', 'icon': Icons.handshake_outlined, 'value': 'Loan'},
+    {'label': 'Savings', 'icon': Icons.savings, 'value': 'Savings'},
+    {'label': 'Food', 'icon': Icons.restaurant, 'value': 'Food'},
+    {'label': 'Groceries', 'icon': Icons.shopping_cart, 'value': 'Groceries'},
+    {'label': 'Shopping', 'icon': Icons.shopping_bag, 'value': 'Shopping'},
+    {'label': 'Subscription', 'icon': Icons.money, 'value': 'Subscription'},
+    {'label': 'Study', 'icon': Icons.menu_book, 'value': 'Study'},
+    {'label': 'Books', 'icon': Icons.library_books, 'value': 'Books'},
+    {'label': 'Cosmetics', 'icon': Icons.face, 'value': 'Cosmetics'},
+    {'label': 'Mobile Recharge', 'icon': Icons.phone, 'value': 'Internet+Recharge'},
+    {'label': 'Bike', 'icon': Icons.two_wheeler, 'value': 'Bike'},
+    {'label': 'Car', 'icon': Icons.directions_car, 'value': 'Car'},
+    {'label': 'Gym', 'icon': Icons.fitness_center, 'value': 'Gym'},
+    {'label': 'Medicine+Doctor', 'icon': Icons.medical_services, 'value': 'Medicine+Doctor'},
+    {'label': 'Sports', 'icon': Icons.sports_soccer, 'value': 'Sports'},
+    {'label': 'Tour', 'icon': Icons.travel_explore, 'value': 'Tour'},
+    {'label': 'Clothes', 'icon': Icons.checkroom, 'value': 'Clothes'},
+    {'label': 'Shoes', 'icon': Icons.shopping_bag, 'value': 'Shoes'},
+    {'label': 'Gift', 'icon': Icons.card_giftcard, 'value': 'Gift'},
+    {'label': 'Education', 'icon': Icons.school, 'value': 'Education'},
+    {'label': 'Electronics', 'icon': Icons.electrical_services, 'value': 'Electronics'},
+    {'label': 'Salary', 'icon': Icons.work, 'value': 'Salary'},
+    {'label': 'Bonus', 'icon': Icons.card_giftcard, 'value': 'Bonus'},
+    {'label': 'Freelance Project', 'icon': Icons.computer, 'value': 'Freelance Project'},
+    {'label': 'Business', 'icon': Icons.business_center, 'value': 'Business'},
+    {'label': 'Others', 'icon': Icons.category, 'value': 'Other'},
+  ];
 
   // Loan-related categories
   static const List<String> _loanCategories = [
     'Loan Borrowed',
     'Loan Given',
     'Loan Repaid',
-    'Loan Received', 
+    'Loan Received',
   ];
 
   // Savings category
@@ -158,7 +174,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
   bool _matchesCategory(dynamic transaction) {
     if (_filterCategory == 'All') return true;
 
-    // Get category from transaction
     String category;
     if (transaction is IncomeModel) {
       category = transaction.category;
@@ -174,7 +189,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
       case 'Savings':
         return category == _savingsCategory;
       default:
-        // For specific categories like Food, Salary, etc.
         return category == _filterCategory;
     }
   }
@@ -196,10 +210,8 @@ static const List<Map<String, dynamic>> _categoryFilters = [
       }
     }
 
-    // Category filter
     list.retainWhere(_matchesCategory);
 
-    // Month filter
     if (_selectedMonth != null) {
       list.retainWhere((t) {
         final d = t.date;
@@ -208,11 +220,9 @@ static const List<Map<String, dynamic>> _categoryFilters = [
       });
     }
 
-    // Search filter - NOW INCLUDES CATEGORY SEARCH
     if (_searchText.isNotEmpty) {
       final q = _searchText.toLowerCase();
       list.retainWhere((t) {
-        // Get category from transaction
         String category;
         if (t is IncomeModel) {
           category = t.category;
@@ -225,11 +235,10 @@ static const List<Map<String, dynamic>> _categoryFilters = [
         return t.sector.toLowerCase().contains(q) ||
             t.details.toLowerCase().contains(q) ||
             t.amount.toString().contains(q) ||
-            category.toLowerCase().contains(q); // Added category search
+            category.toLowerCase().contains(q);
       });
     }
 
-    // Sort
     list.sort((a, b) {
       final dateA = a.date;
       final dateB = b.date;
@@ -241,20 +250,18 @@ static const List<Map<String, dynamic>> _categoryFilters = [
     return list;
   }
 
-  // Method to calculate total amount for a list of transactions
   double _calculateTotal(List<dynamic> transactions) {
     double total = 0;
     for (final transaction in transactions) {
       if (transaction is IncomeModel) {
         total += transaction.amount;
       } else if (transaction is ExpenseModel) {
-        total -= transaction.amount; // Expenses are negative
+        total -= transaction.amount;
       }
     }
     return total;
   }
 
-  // Method to group transactions by date with totals
   List<dynamic> _buildGroupedList(List<dynamic> transactions) {
     if (transactions.isEmpty) return [];
 
@@ -272,7 +279,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
 
     final result = <dynamic>[];
 
-    // Sort dates
     final sortedDates = grouped.keys.toList()
       ..sort((a, b) {
         final dateA = DateTime.parse(a);
@@ -288,7 +294,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
       final transactionsOnDate = grouped[dateKey]!;
       final dailyTotal = _calculateTotal(transactionsOnDate);
 
-      // Add divider header with total
       result.add({
         'isDivider': true,
         'date': date,
@@ -297,7 +302,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
         'dailyTotal': dailyTotal,
       });
 
-      // Add transactions for this date
       result.addAll(transactionsOnDate);
     }
 
@@ -321,10 +325,13 @@ static const List<Map<String, dynamic>> _categoryFilters = [
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
+      // Expense Categories
       case 'Food':
         return Icons.restaurant;
       case 'Groceries':
         return Icons.shopping_cart;
+      case 'Shopping':
+        return Icons.shopping_bag;
       case 'Internet+Recharge':
         return Icons.wifi;
       case 'Bike':
@@ -347,10 +354,20 @@ static const List<Map<String, dynamic>> _categoryFilters = [
         return Icons.card_giftcard;
       case 'Education':
         return Icons.school;
-      case 'Entertainment':
-        return Icons.movie;
       case 'Electronics':
         return Icons.electrical_services;
+      case 'Subscription':
+        return Icons.subscriptions;
+      case 'Study':
+        return Icons.menu_book;
+      case 'Books':
+        return Icons.library_books;
+      case 'Cosmetics':
+        return Icons.face;
+      case 'Savings':
+        return Icons.savings;
+      
+      // Income Categories
       case 'Salary':
         return Icons.work;
       case 'Bonus':
@@ -359,14 +376,17 @@ static const List<Map<String, dynamic>> _categoryFilters = [
         return Icons.computer;
       case 'Business':
         return Icons.business_center;
+      
+      // Loan Categories
       case 'Loan Borrowed':
         return Icons.paypal;
       case 'Loan Given':
         return Icons.handshake;
       case 'Loan Repaid':
         return Icons.assignment_turned_in;
-      case 'Savings':
-        return Icons.savings;
+      case 'Loan Received':
+        return Icons.assignment_turned_in;
+      
       default:
         return Icons.category;
     }
@@ -405,7 +425,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
 
             return Column(
               children: [
-                // ── Search bar ──────────────────────
+                // Search bar
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: TextField(
@@ -427,7 +447,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                   ),
                 ),
 
-                // ── Search suggestions / active filters ──
                 if (_searchText.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -460,26 +479,21 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                   ),
                 ],
 
-                // ── Row 1: Month + Type + Sort ──────
+                // Row 1: Month + Type + Sort
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        // Month chip
                         GestureDetector(
                           onTap: () => _pickMonth(context),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               color: _selectedMonth != null
                                   ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .surfaceVariant,
+                                  : Theme.of(context).colorScheme.surfaceVariant,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -488,36 +502,25 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                 Icon(Icons.calendar_month_outlined,
                                     size: 16,
                                     color: _selectedMonth != null
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant),
+                                        ? Theme.of(context).colorScheme.onPrimary
+                                        : Theme.of(context).colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 6),
                                 Text(
                                   monthLabel ?? 'All months',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: _selectedMonth != null
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
+                                        ? Theme.of(context).colorScheme.onPrimary
+                                        : Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 if (_selectedMonth != null) ...[
                                   const SizedBox(width: 6),
                                   GestureDetector(
-                                    onTap: () =>
-                                        setState(() => _selectedMonth = null),
+                                    onTap: () => setState(() => _selectedMonth = null),
                                     child: Icon(Icons.close,
                                         size: 14,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimary),
+                                        color: Theme.of(context).colorScheme.onPrimary),
                                   ),
                                 ],
                               ],
@@ -525,24 +528,17 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                           ),
                         ),
                         const SizedBox(width: 8),
-
-                        // Type chips
                         for (final type in ['All', 'Income', 'Expense'])
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: ChoiceChip(
-                              label: Text(type,
-                                  style: const TextStyle(fontSize: 12)),
+                              label: Text(type, style: const TextStyle(fontSize: 12)),
                               selected: _filterType == type,
-                              onSelected: (_) =>
-                                  setState(() => _filterType = type),
+                              onSelected: (_) => setState(() => _filterType = type),
                               visualDensity: VisualDensity.compact,
                             ),
                           ),
-
                         const SizedBox(width: 4),
-
-                        // Sort toggle
                         IconButton(
                           tooltip: _sortOrder,
                           icon: Icon(
@@ -552,8 +548,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                             size: 20,
                           ),
                           onPressed: () => setState(() {
-                            _sortOrder =
-                                _sortOrder == 'Oldest' ? 'Newest' : 'Oldest';
+                            _sortOrder = _sortOrder == 'Oldest' ? 'Newest' : 'Oldest';
                           }),
                         ),
                       ],
@@ -561,7 +556,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                   ),
                 ),
 
-                // ── Row 2: Category filters ─────────
+                // Row 2: Category filters
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: SingleChildScrollView(
@@ -577,9 +572,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                 size: 14,
                                 color: _filterCategory == filter['value']
                                     ? Theme.of(context).colorScheme.onPrimary
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                               label: Text(
                                 filter['label'] as String,
@@ -591,8 +584,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                 ),
                               ),
                               selected: _filterCategory == filter['value'],
-                              selectedColor:
-                                  Theme.of(context).colorScheme.primary,
+                              selectedColor: Theme.of(context).colorScheme.primary,
                               onSelected: (_) => setState(() =>
                                   _filterCategory = filter['value'] as String),
                               visualDensity: VisualDensity.compact,
@@ -605,13 +597,12 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                 ),
                 const SizedBox(height: 6),
 
-                // ── Count and Total ───────────────────────────
+                // Count and Total
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Left side: transaction count
                       Row(
                         children: [
                           Text(
@@ -656,13 +647,8 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                           ],
                         ],
                       ),
-                      
-                      // Right side: total amount
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: totalAmount >= 0
                               ? const Color(0xFF1D9E75).withOpacity(0.1)
@@ -700,7 +686,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                 ),
                 const SizedBox(height: 4),
 
-                // ── Transaction list with dividers ───
+                // Transaction list with dividers
                 Expanded(
                   child: groupedList.isEmpty
                       ? Center(
@@ -740,7 +726,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                           itemBuilder: (context, index) {
                             final item = groupedList[index];
 
-                            // Check if this is a divider
                             if (item is Map && item['isDivider'] == true) {
                               final dailyTotal = item['dailyTotal'] as double;
                               
@@ -763,7 +748,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Left side: date and count
                                     Expanded(
                                       child: Row(
                                         children: [
@@ -803,8 +787,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                         ],
                                       ),
                                     ),
-                                    
-                                    // Right side: daily total
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -832,7 +814,6 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                               );
                             }
 
-                            // Regular transaction item
                             final transaction = item;
                             final isIncome = transaction is IncomeModel;
                             final color = isIncome
@@ -842,15 +823,13 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                 ? const Color(0xFFEAF3DE)
                                 : const Color(0xFFFAECE7);
                             final date = transaction.date;
-                            final dateStr =
-                                '${date.day}/${date.month}/${date.year}';
+                            final dateStr = '${date.day}/${date.month}/${date.year}';
                             final category = isIncome
                                 ? (transaction as IncomeModel).category
                                 : (transaction as ExpenseModel).category;
 
                             return Card(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 4),
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                               child: ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: bgColor,
@@ -867,8 +846,7 @@ static const List<Map<String, dynamic>> _categoryFilters = [
                                     Expanded(
                                       child: Text(
                                         transaction.sector,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w500),
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),

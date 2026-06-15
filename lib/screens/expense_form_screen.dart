@@ -24,26 +24,33 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   static const _coralMid = Color(0xFFF0997B);
 
   // Expense categories
-  static const List<String> _expenseCategories = [
-    'Food',
-    'Groceries',
-    'Internet+Recharge',
-    'Bike',
-    'Car',
-    'Gym',
-    'Medicine+Doctor',
-    'Sports',
-    'Tour',
-    'Clothes',
-    'Shoes',
-    'Gift',
-    'Education',
-    'Entertainment',
-    'Electronics',
-    'Loan Given', 
-    'Loan Repaid',
-    'Other'
-  ];
+  // Expense categories
+// Expense categories
+static const List<String> _expenseCategories = [
+  'Food',
+  'Groceries',
+  'Internet+Recharge',
+  'Bike',
+  'Car',
+  'Gym',
+  'Medicine+Doctor',
+  'Sports',
+  'Tour',
+  'Clothes',
+  'Shoes',
+  'Gift',
+  'Education',
+  'Electronics',
+  'Shopping',
+  'Subscription',  // Added
+  'Study',         // Added
+  'Books',         // Added
+  'Cosmetics',     // Added
+  'Loan Given',
+  'Loan Repaid',
+  'Savings',
+  'Other'
+];
 
   String _currency = 'BDT';
   String _category = 'Food'; // Default category
@@ -539,61 +546,71 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       ),
     );
   }
-
-  Widget _getCategoryIcon(String category, Color color) {
-    IconData iconData;
-    switch (category) {
-      case 'Food':
-        iconData = Icons.restaurant;
-        break;
-      case 'Groceries':
-        iconData = Icons.shopping_cart;
-        break;
-      case 'Internet+Recharge':
-        iconData = Icons.wifi;
-        break;
-      case 'Bike':
-        iconData = Icons.two_wheeler;
-        break;
-      case 'Car':
-        iconData = Icons.directions_car;
-        break;
-      case 'Gym':
-        iconData = Icons.fitness_center;
-        break;
-      case 'Medicine+Doctor':
-        iconData = Icons.medical_services;
-        break;
-      case 'Sports':
-        iconData = Icons.sports_soccer;
-        break;
-      case 'Tour':
-        iconData = Icons.flight_takeoff;
-        break;
-      case 'Clothes':
-        iconData = Icons.checkroom;
-        break;
-      case 'Shoes':
-        iconData = Icons.shopping_bag;
-        break;
-      case 'Gift':
-        iconData = Icons.card_giftcard;
-        break;
-      case 'Education':
-        iconData = Icons.school;
-        break;
-      case 'Entertainment':
-        iconData = Icons.movie;
-        break;
-      case 'Electronics':
-        iconData = Icons.electrical_services;
-        break;
-      default:
-        iconData = Icons.category;
-    }
-    return Icon(iconData, size: 18, color: color);
+Widget _getCategoryIcon(String category, Color color) {
+  IconData iconData;
+  switch (category) {
+    case 'Food':
+      iconData = Icons.restaurant;
+      break;
+    case 'Groceries':
+      iconData = Icons.shopping_cart;
+      break;
+    case 'Internet+Recharge':
+      iconData = Icons.wifi;
+      break;
+    case 'Bike':
+      iconData = Icons.two_wheeler;
+      break;
+    case 'Car':
+      iconData = Icons.directions_car;
+      break;
+    case 'Gym':
+      iconData = Icons.fitness_center;
+      break;
+    case 'Medicine+Doctor':
+      iconData = Icons.medical_services;
+      break;
+    case 'Sports':
+      iconData = Icons.sports_soccer;
+      break;
+    case 'Tour':
+      iconData = Icons.flight_takeoff;
+      break;
+    case 'Clothes':
+      iconData = Icons.checkroom;
+      break;
+    case 'Shoes':
+      iconData = Icons.shopping_bag;
+      break;
+    case 'Gift':
+      iconData = Icons.card_giftcard;
+      break;
+    case 'Education':
+      iconData = Icons.school;
+      break;
+    case 'Electronics':
+      iconData = Icons.electrical_services;
+      break;
+    case 'Shopping':
+      iconData = Icons.shopping_bag;
+      break;
+    case 'Subscription':
+      iconData = Icons.subscriptions;
+      break;
+    case 'Study':
+      iconData = Icons.menu_book;
+      break;
+    case 'Books':
+      iconData = Icons.library_books;
+      break;
+    case 'Cosmetics':
+      iconData = Icons.face;
+      break;
+    default:
+      iconData = Icons.category;
   }
-
+  return Icon(iconData, size: 18, color: color);
+}
   // ── Helpers ──────────────────────────────────────────
 
   Widget _sectionLabel(String text, IconData icon) {

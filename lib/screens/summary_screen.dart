@@ -131,6 +131,59 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     }
   }
 
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food':
+        return Icons.restaurant;
+      case 'Groceries':
+        return Icons.shopping_cart;
+      case 'Shopping':
+        return Icons.shopping_bag;
+      case 'Internet+Recharge':
+        return Icons.wifi;
+      case 'Bike':
+        return Icons.two_wheeler;
+      case 'Car':
+        return Icons.directions_car;
+      case 'Gym':
+        return Icons.fitness_center;
+      case 'Medicine+Doctor':
+        return Icons.medical_services;
+      case 'Sports':
+        return Icons.sports_soccer;
+      case 'Tour':
+        return Icons.flight_takeoff;
+      case 'Clothes':
+        return Icons.checkroom;
+      case 'Shoes':
+        return Icons.shopping_bag;
+      case 'Gift':
+        return Icons.card_giftcard;
+      case 'Education':
+        return Icons.school;
+      case 'Electronics':
+        return Icons.electrical_services;
+      case 'Subscription':
+        return Icons.subscriptions;
+      case 'Study':
+        return Icons.menu_book;
+      case 'Books':
+        return Icons.library_books;
+      case 'Cosmetics':
+        return Icons.face;
+      case 'Salary':
+        return Icons.work;
+      case 'Bonus':
+        return Icons.card_giftcard;
+      case 'Freelance Project':
+        return Icons.computer;
+      case 'Business':
+        return Icons.business_center;
+      default:
+        return Icons.category;
+    }
+  }
+
   static const _colors = [
     Color(0xFF1D9E75),
     Color(0xFF378ADD),
@@ -197,13 +250,12 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
             final hasIncomeData = incomeByCategory.isNotEmpty;
             final hasExpenseData = expenseByCategory.isNotEmpty;
             
-            // Get current chart data
             final currentChartData = _showIncomeChart ? incomeByCategory : expenseByCategory;
             final hasCurrentData = currentChartData.isNotEmpty;
 
             return RefreshIndicator(
               onRefresh: () async {
-                refreshAll(ref);
+                 refreshAll(ref);
               },
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -211,7 +263,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Period Selector ──────────────────────
+                    // Period Selector
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -221,34 +273,32 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            // Time range selector
                             Wrap(
-  spacing: 8,
-  runSpacing: 8,
-  alignment: WrapAlignment.center,
-  children: [
-    for (final range in ['Monthly', 'Quarterly', 'Yearly'])
-      ChoiceChip(
-        label: Text(range),
-        selected: _selectedTimeRange == range,
-        selectedColor: Theme.of(context).colorScheme.primary,
-        labelStyle: TextStyle(
-          color: _selectedTimeRange == range
-              ? Colors.white
-              : Colors.black, // Changed from null to Colors.black
-          fontSize: 13,
-        ),
-        onSelected: (_) {
-          setState(() {
-            _selectedTimeRange = range;
-            _touchedIndex = -1;
-          });
-        },
-      ),
-  ],
-),
+                              spacing: 8,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                for (final range in ['Monthly', 'Quarterly', 'Yearly'])
+                                  ChoiceChip(
+                                    label: Text(range),
+                                    selected: _selectedTimeRange == range,
+                                    selectedColor: Theme.of(context).colorScheme.primary,
+                                    labelStyle: TextStyle(
+                                      color: _selectedTimeRange == range
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontSize: 13,
+                                    ),
+                                    onSelected: (_) {
+                                      setState(() {
+                                        _selectedTimeRange = range;
+                                        _touchedIndex = -1;
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
                             const SizedBox(height: 16),
-                            // Period navigation
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -292,7 +342,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ── Overview Stats Card ─────────────────────
+                    // Overview Stats Card
                     Card(
                       elevation: 4,
                       shape: RoundedRectangleBorder(
@@ -353,7 +403,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ── Pie Chart Section with proper empty state handling ──
+                    // Pie Chart Section
                     Card(
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -363,66 +413,64 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            // Toggle income/expense
-                           Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    ChoiceChip(
-      label: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.arrow_upward_rounded, size: 16),
-          SizedBox(width: 4),
-          Text('Expense'),
-        ],
-      ),
-      selected: !_showIncomeChart,
-      selectedColor: const Color(0xFFD85A30),
-      labelStyle: TextStyle(
-        color: !_showIncomeChart
-            ? Colors.white
-            : Colors.black, // Changed from null to Colors.black
-      ),
-      onSelected: (_) {
-        if (hasExpenseData) {
-          setState(() {
-            _showIncomeChart = false;
-            _touchedIndex = -1;
-          });
-        }
-      },
-    ),
-    const SizedBox(width: 12),
-    ChoiceChip(
-      label: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.arrow_downward_rounded, size: 16),
-          SizedBox(width: 4),
-          Text('Income'),
-        ],
-      ),
-      selected: _showIncomeChart,
-      selectedColor: const Color(0xFF1D9E75),
-      labelStyle: TextStyle(
-        color: _showIncomeChart
-            ? Colors.white
-            : Colors.black, // Changed from null to Colors.black
-      ),
-      onSelected: (_) {
-        if (hasIncomeData) {
-          setState(() {
-            _showIncomeChart = true;
-            _touchedIndex = -1;
-          });
-        }
-      },
-    ),
-  ],
-),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ChoiceChip(
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.arrow_upward_rounded, size: 16),
+                                      SizedBox(width: 4),
+                                      Text('Expense'),
+                                    ],
+                                  ),
+                                  selected: !_showIncomeChart,
+                                  selectedColor: const Color(0xFFD85A30),
+                                  labelStyle: TextStyle(
+                                    color: !_showIncomeChart
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                  onSelected: (_) {
+                                    if (hasExpenseData) {
+                                      setState(() {
+                                        _showIncomeChart = false;
+                                        _touchedIndex = -1;
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 12),
+                                ChoiceChip(
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.arrow_downward_rounded, size: 16),
+                                      SizedBox(width: 4),
+                                      Text('Income'),
+                                    ],
+                                  ),
+                                  selected: _showIncomeChart,
+                                  selectedColor: const Color(0xFF1D9E75),
+                                  labelStyle: TextStyle(
+                                    color: _showIncomeChart
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                  onSelected: (_) {
+                                    if (hasIncomeData) {
+                                      setState(() {
+                                        _showIncomeChart = true;
+                                        _touchedIndex = -1;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
                             const SizedBox(height: 24),
                             
-                            // Chart or Empty State
                             if (hasCurrentData) ...[
                               SizedBox(
                                 height: 250,
@@ -465,10 +513,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                                   final isTouched = idx == _touchedIndex;
                                   
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: isTouched ? color.withOpacity(0.1) : Colors.transparent,
                                       borderRadius: BorderRadius.circular(12),
@@ -479,12 +524,15 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                                         Container(
                                           width: 10,
                                           height: 10,
-                                          decoration: BoxDecoration(
-                                            color: color,
-                                            shape: BoxShape.circle,
-                                          ),
+                                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                                         ),
                                         const SizedBox(width: 6),
+                                        Icon(
+                                          _getCategoryIcon(category),
+                                          size: 12,
+                                          color: color,
+                                        ),
+                                        const SizedBox(width: 4),
                                         Text(
                                           category,
                                           style: TextStyle(
@@ -506,7 +554,6 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                                 }).toList(),
                               ),
                             ] else ...[
-                              // Empty state for chart
                               Container(
                                 height: 200,
                                 alignment: Alignment.center,
@@ -546,7 +593,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // ── Income by Category ──────────────────
+                    // Income by Category
                     if (incomeByCategory.isNotEmpty) ...[
                       _SectionHeader(
                         label: 'Income Breakdown',
@@ -562,12 +609,13 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                           total: totalIncome,
                           color: const Color(0xFF1D9E75),
                           bgColor: const Color(0xFFEAF3DE),
+                          getCategoryIcon: _getCategoryIcon,
                         ),
                       ),
                       const SizedBox(height: 24),
                     ],
 
-                    // ── Expense by Category ─────────────────
+                    // Expense by Category
                     if (expenseByCategory.isNotEmpty) ...[
                       _SectionHeader(
                         label: 'Expense Breakdown',
@@ -583,6 +631,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                           total: totalExpense,
                           color: const Color(0xFFD85A30),
                           bgColor: const Color(0xFFFAECE7),
+                          getCategoryIcon: _getCategoryIcon,
                         ),
                       ),
                     ],
@@ -769,6 +818,7 @@ class _CategoryRow extends StatelessWidget {
   final double total;
   final Color color;
   final Color bgColor;
+  final IconData Function(String) getCategoryIcon;
 
   const _CategoryRow({
     required this.category,
@@ -776,6 +826,7 @@ class _CategoryRow extends StatelessWidget {
     required this.total,
     required this.color,
     required this.bgColor,
+    required this.getCategoryIcon,
   });
 
   @override
@@ -808,13 +859,10 @@ class _CategoryRow extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
-                          child: Text(
-                            category.isNotEmpty ? category[0].toUpperCase() : '?',
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Icon(
+                            getCategoryIcon(category),
+                            color: color,
+                            size: 18,
                           ),
                         ),
                       ),

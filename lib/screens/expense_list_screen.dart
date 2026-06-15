@@ -65,48 +65,50 @@ class _ExpenseCard extends ConsumerWidget {
   final ExpenseModel expense;
   const _ExpenseCard({required this.expense});
 
-  String _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Food':
-        return '🍔';
-      case 'Groceries':
-        return '🛒';
-      case 'Internet+Recharge':
-        return '📱';
-      case 'Bike':
-        return '🏍️';
-      case 'Car':
-        return '🚗';
-      case 'Gym':
-        return '💪';
-      case 'Medicine+Doctor':
-        return '💊';
-      case 'Sports':
-        return '⚽';
-      case 'Tour':
-        return '✈️';
-      case 'Clothes':
-        return '👕';
-      case 'Shoes':
-        return '👟';
-      case 'Gift':
-        return '🎁';
-      case 'Education':
-        return '📚';
-      case 'Entertainment':
-        return '🎬';
-      case 'Electronics':
-        return '📱';
-      case 'Loan Given':
-        return '💰';
-      case 'Loan Repaid':
-        return '💸';
-      case 'Savings':
-        return '🏦';
-      default:
-        return '📌';
-    }
+String _getCategoryIcon(String category) {
+  switch (category) {
+    case 'Food':
+      return '🍔';
+    case 'Groceries':
+      return '🛒';
+    case 'Shopping':
+      return '🛍️';
+    case 'Internet+Recharge':
+      return '📱';
+    case 'Bike':
+      return '🏍️';
+    case 'Car':
+      return '🚗';
+    case 'Gym':
+      return '💪';
+    case 'Medicine+Doctor':
+      return '💊';
+    case 'Sports':
+      return '⚽';
+    case 'Tour':
+      return '✈️';
+    case 'Clothes':
+      return '👕';
+    case 'Shoes':
+      return '👟';
+    case 'Gift':
+      return '🎁';
+    case 'Education':
+      return '📚';
+    case 'Electronics':
+      return '📱';
+    case 'Subscription':
+      return '📺';
+    case 'Study':
+      return '📖';
+    case 'Books':
+      return '📚';
+    case 'Cosmetics':
+      return '💄';
+    default:
+      return '📌';
   }
+}
 
   Color _getCategoryColor(String category) {
     switch (category) {
