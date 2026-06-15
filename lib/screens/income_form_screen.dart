@@ -23,7 +23,19 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
   static const _greenLight = Color(0xFFEAF3DE);
   static const _greenMid = Color(0xFF5DCAA5);
 
+  // Income categories
+  static const List<String> _incomeCategories = [
+    'Salary',
+    'Bonus',
+    'Freelance Project',
+    'Business',
+    'Gift',
+    'Loan Borrowed',
+    'Other'
+  ];
+
   String _currency = 'BDT';
+  String _category = 'Salary'; // Default category
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _sectorCtrl;
   late final TextEditingController _detailsCtrl;
@@ -40,6 +52,7 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
   void initState() {
     super.initState();
     _currency = widget.income?.currency ?? 'BDT';
+    _category = widget.income?.category ?? 'Salary';
     _sectorCtrl = TextEditingController(text: widget.income?.sector ?? '');
     _detailsCtrl = TextEditingController(text: widget.income?.details ?? '');
     _existingReceiptUrl = widget.income?.receiptUrl;
@@ -92,6 +105,7 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
           amount: double.parse(_amountCtrl.text.trim()),
           date: _selectedDate,
           currency: _currency,
+          category: _category,
           receiptUrl: receiptUrl,
           sourceType: widget.income!.sourceType,
           sourceId: widget.income!.sourceId,
@@ -109,6 +123,7 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
               amount: double.parse(_amountCtrl.text.trim()),
               date: _selectedDate,
               currency: _currency,
+              category: _category,
               receiptUrl: receiptUrl,
             ));
         if (mounted) {
@@ -119,6 +134,7 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
               _detailsCtrl.clear();
               _amountCtrl.clear();
               _selectedDate = DateTime.now();
+              _category = 'Salary';
               _pickedImage = null;
               _existingReceiptUrl = null;
             });
@@ -252,11 +268,41 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
                   controller: _sectorCtrl,
                   decoration: _fieldDecoration(
                     label: 'Sector name',
-                    hint: 'e.g. Salary, Freelance, Business',
+                    hint: 'e.g. Company Name, Project Name',
                     icon: Icons.label_outline,
                   ),
                   validator: (v) =>
                       v == null || v.isEmpty ? 'Please enter a sector' : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Category Dropdown
+              _buildField(
+                child: DropdownButtonFormField<String>(
+                  value: _category,
+                  decoration: _fieldDecoration(
+                    label: 'Category',
+                    icon: Icons.category_outlined,
+                  ),
+                  isDense: true,
+                  isExpanded: true,
+                  iconSize: 20,
+                  items: _incomeCategories.map((String category) {
+                    return DropdownMenuItem<String>(
+                      value: category,
+                      child: Row(
+                        children: [
+                          _getCategoryIcon(category, _green),
+                          const SizedBox(width: 8),
+                          Text(category),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (v) => setState(() => _category = v!),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Please select a category' : null,
                 ),
               ),
               const SizedBox(height: 12),
@@ -267,7 +313,7 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
                   controller: _detailsCtrl,
                   maxLines: 1,
                   decoration: _fieldDecoration(
-                    label: 'Details',
+                    label: 'Details (Optional)',
                     hint: 'e.g. Monthly salary from ABC company',
                     icon: Icons.edit_note_outlined,
                   ),
@@ -477,6 +523,30 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
     );
   }
 
+  Widget _getCategoryIcon(String category, Color color) {
+    IconData iconData;
+    switch (category) {
+      case 'Salary':
+        iconData = Icons.work;
+        break;
+      case 'Bonus':
+        iconData = Icons.card_giftcard;
+        break;
+      case 'Freelance Project':
+        iconData = Icons.computer;
+        break;
+      case 'Business':
+        iconData = Icons.business_center;
+        break;
+      case 'Gift':
+        iconData = Icons.card_giftcard;
+        break;
+      default:
+        iconData = Icons.category;
+    }
+    return Icon(iconData, size: 18, color: color);
+  }
+
   // ── Helpers ──────────────────────────────────────────
 
   Widget _sectionLabel(String text, IconData icon) {
@@ -488,8 +558,8 @@ class _IncomeFormScreenState extends ConsumerState<IncomeFormScreen> {
           child: Text(
             text,
             style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
                 color: _green,
                 letterSpacing: 0.5),
             overflow: TextOverflow.ellipsis,

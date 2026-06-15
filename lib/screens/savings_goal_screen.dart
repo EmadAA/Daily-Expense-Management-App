@@ -368,6 +368,7 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                             .read(savingsGoalProvider.notifier)
                             .addToSaved(goal.id, amount);
 
+                        // Add expense with category 'Savings'
                         await ref.read(expenseProvider.notifier).add(
                               ExpenseModel(
                                 id: '',
@@ -376,6 +377,7 @@ class _SavingsGoalsScreenState extends ConsumerState<SavingsGoalsScreen> {
                                 amount: amount,
                                 date: DateTime.now(),
                                 currency: 'BDT',
+                                category: 'Other', // Added category - using 'Other' for savings
                                 sourceType: 'goal',
                                 sourceId: goal.id,
                               ),

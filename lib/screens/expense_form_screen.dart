@@ -19,11 +19,34 @@ class ExpenseFormScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
-  static const _coral = Color(0xFFD85A30);
+  static const _coral = Color(0xFFE94B47);
   static const _coralLight = Color(0xFFFAECE7);
   static const _coralMid = Color(0xFFF0997B);
 
+  // Expense categories
+  static const List<String> _expenseCategories = [
+    'Food',
+    'Groceries',
+    'Internet+Recharge',
+    'Bike',
+    'Car',
+    'Gym',
+    'Medicine+Doctor',
+    'Sports',
+    'Tour',
+    'Clothes',
+    'Shoes',
+    'Gift',
+    'Education',
+    'Entertainment',
+    'Electronics',
+    'Loan Given', 
+    'Loan Repaid',
+    'Other'
+  ];
+
   String _currency = 'BDT';
+  String _category = 'Food'; // Default category
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _sectorCtrl;
   late final TextEditingController _detailsCtrl;
@@ -40,6 +63,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   void initState() {
     super.initState();
     _currency = widget.expense?.currency ?? 'BDT';
+    _category = widget.expense?.category ?? 'Food';
     _sectorCtrl = TextEditingController(text: widget.expense?.sector ?? '');
     _detailsCtrl = TextEditingController(text: widget.expense?.details ?? '');
     _existingReceiptUrl = widget.expense?.receiptUrl;
@@ -92,6 +116,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           amount: double.parse(_amountCtrl.text.trim()),
           date: _selectedDate,
           currency: _currency,
+          category: _category,
           receiptUrl: receiptUrl,
           sourceType: widget.expense!.sourceType,
           sourceId: widget.expense!.sourceId,
@@ -109,6 +134,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               amount: double.parse(_amountCtrl.text.trim()),
               date: _selectedDate,
               currency: _currency,
+              category: _category,
               receiptUrl: receiptUrl,
             ));
         if (mounted) {
@@ -119,6 +145,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               _detailsCtrl.clear();
               _amountCtrl.clear();
               _selectedDate = DateTime.now();
+              _category = 'Food';
               _pickedImage = null;
               _existingReceiptUrl = null;
             });
@@ -157,7 +184,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateStr =
         '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
-    final bgColor = isDark ? const Color(0xFF1F0D0D) : const Color(0xFFFDF5F2);
+    final bgColor = isDark ? const Color(0xFF1F0D0D) : const Color(0xFFFFFFFF);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -193,7 +220,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [_coral, _coralMid],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -252,11 +279,47 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   controller: _sectorCtrl,
                   decoration: _fieldDecoration(
                     label: 'Sector name',
-                    hint: 'e.g. Food, Transport, Utilities',
+                    hint: 'e.g. Restaurant, Supermarket, Petrol Pump',
                     icon: Icons.label_outline,
                   ),
                   validator: (v) =>
                       v == null || v.isEmpty ? 'Please enter a sector' : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Category Dropdown
+              _buildField(
+                child: DropdownButtonFormField<String>(
+                  value: _category,
+                  decoration: _fieldDecoration(
+                    label: 'Category',
+                    icon: Icons.category_outlined,
+                  ),
+                  isDense: true,
+                  isExpanded: true,
+                  iconSize: 20,
+                  items: _expenseCategories.map((String category) {
+                    return DropdownMenuItem<String>(
+                      value: category,
+                      child: Row(
+                        children: [
+                          _getCategoryIcon(category, Colors.black),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              category,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (v) => setState(() => _category = v!),
+                  validator: (v) => v == null || v.isEmpty
+                      ? 'Please select a category'
+                      : null,
                 ),
               ),
               const SizedBox(height: 12),
@@ -267,8 +330,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   controller: _detailsCtrl,
                   maxLines: 1,
                   decoration: _fieldDecoration(
-                    label: 'Details',
-                    hint: 'e.g. Lunch at restaurant',
+                    label: 'Details (Optional)',
+                    hint: 'e.g. Lunch at restaurant, Monthly groceries',
                     icon: Icons.edit_note_outlined,
                   ),
                 ),
@@ -477,20 +540,74 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     );
   }
 
+  Widget _getCategoryIcon(String category, Color color) {
+    IconData iconData;
+    switch (category) {
+      case 'Food':
+        iconData = Icons.restaurant;
+        break;
+      case 'Groceries':
+        iconData = Icons.shopping_cart;
+        break;
+      case 'Internet+Recharge':
+        iconData = Icons.wifi;
+        break;
+      case 'Bike':
+        iconData = Icons.two_wheeler;
+        break;
+      case 'Car':
+        iconData = Icons.directions_car;
+        break;
+      case 'Gym':
+        iconData = Icons.fitness_center;
+        break;
+      case 'Medicine+Doctor':
+        iconData = Icons.medical_services;
+        break;
+      case 'Sports':
+        iconData = Icons.sports_soccer;
+        break;
+      case 'Tour':
+        iconData = Icons.flight_takeoff;
+        break;
+      case 'Clothes':
+        iconData = Icons.checkroom;
+        break;
+      case 'Shoes':
+        iconData = Icons.shopping_bag;
+        break;
+      case 'Gift':
+        iconData = Icons.card_giftcard;
+        break;
+      case 'Education':
+        iconData = Icons.school;
+        break;
+      case 'Entertainment':
+        iconData = Icons.movie;
+        break;
+      case 'Electronics':
+        iconData = Icons.electrical_services;
+        break;
+      default:
+        iconData = Icons.category;
+    }
+    return Icon(iconData, size: 18, color: color);
+  }
+
   // ── Helpers ──────────────────────────────────────────
 
   Widget _sectionLabel(String text, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: _coral),
+        Icon(icon, size: 16, color: Colors.black),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _coral,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
                 letterSpacing: 0.5),
             overflow: TextOverflow.ellipsis,
           ),
@@ -532,7 +649,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               child: prefix,
             )
           : Icon(icon, color: _coral, size: 20),
-      labelStyle: TextStyle(color: _coral.withOpacity(0.8), fontSize: 13),
+      labelStyle: TextStyle(color: Colors.black.withOpacity(0.8), fontSize: 13),
       floatingLabelStyle:
           const TextStyle(color: _coral, fontWeight: FontWeight.w600),
       border: OutlineInputBorder(

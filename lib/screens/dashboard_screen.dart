@@ -1068,7 +1068,12 @@ class _Body extends ConsumerWidget {
                         MaterialPageRoute(
                             builder: (_) => const ExpenseListScreen())),
                   ),
-                  const SizedBox(width: 12),
+                 
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
                   _NavButton(
                     label: 'Summary',
                     icon: Icons.bar_chart_rounded,
@@ -1078,33 +1083,29 @@ class _Body extends ConsumerWidget {
                         MaterialPageRoute(
                             builder: (_) => const SummaryScreen())),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _NavButton(
-                    label: 'Budget',
-                    icon: Icons.account_balance_wallet_outlined,
-                    color: const Color(0xFF7F77DD),
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const BudgetScreen())),
-                  ),
                   const SizedBox(width: 12),
+                  // _NavButton(
+                  //   label: 'Budget',
+                  //   icon: Icons.account_balance_wallet_outlined,
+                  //   color: const Color(0xFF7F77DD),
+                  //   onTap: () => Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //           builder: (_) => const BudgetScreen())),
+                  // ),
+                  // const SizedBox(width: 12),
+                  // _NavButton(
+                  //   label: 'Recurring',
+                  //   icon: Icons.repeat,
+                  //   color: const Color(0xFF5DCAA5),
+                  //   onTap: () => Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //           builder: (_) => const RecurringScreen())),
+                  // ),
+                  // const SizedBox(width: 12),
                   _NavButton(
-                    label: 'Recurring',
-                    icon: Icons.repeat,
-                    color: const Color(0xFF5DCAA5),
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const RecurringScreen())),
-                  ),
-                  const SizedBox(width: 12),
-                  _NavButton(
-                    label: 'All',
+                    label: 'All Transactions',
                     icon: Icons.list_alt_rounded,
                     color: const Color(0xFF888780),
                     onTap: () => Navigator.push(
@@ -1112,6 +1113,7 @@ class _Body extends ConsumerWidget {
                         MaterialPageRoute(
                             builder: (_) => const AllTransactionsScreen())),
                   ),
+                  
                 ],
               ),
               const SizedBox(height: 12),

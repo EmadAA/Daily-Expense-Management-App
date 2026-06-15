@@ -394,6 +394,7 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                               await ref.read(loanProvider.notifier).add(loan);
 
                           if (_type == 'lent') {
+                            // When lending money, it's an expense - "Loan Given"
                             await ref.read(expenseProvider.notifier).add(
                                   ExpenseModel(
                                     id: '',
@@ -403,11 +404,13 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                                     amount: amount,
                                     date: DateTime.now(),
                                     currency: 'BDT',
+                                    category: 'Loan Given', // Specific category
                                     sourceType: 'loan',
                                     sourceId: loanId,
                                   ),
                                 );
                           } else {
+                            // When borrowing money, it's an income - "Loan Borrowed"
                             await ref.read(incomeProvider.notifier).add(
                                   IncomeModel(
                                     id: '',
@@ -418,6 +421,8 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                                     amount: amount,
                                     date: DateTime.now(),
                                     currency: 'BDT',
+                                    category:
+                                        'Loan Borrowed', // Specific category
                                     sourceType: 'loan',
                                     sourceId: loanId,
                                   ),
@@ -588,19 +593,23 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                             .markPaid(loan.id, amount);
 
                         if (loan.isLent) {
+                          // When receiving loan repayment, it's an income - "Loan Repaid"
                           await ref.read(incomeProvider.notifier).add(
                                 IncomeModel(
                                   id: '',
-                                  sector: 'Loan Received',
+                                  sector: 'Loan Repaid',
                                   details: 'Paid back by ${loan.personName}',
                                   amount: amount,
                                   date: DateTime.now(),
                                   currency: 'BDT',
+                                  category:
+                                      'Loan Borrowed', // Income category for repayment received
                                   sourceType: 'loan_repayment',
                                   sourceId: loan.id,
                                 ),
                               );
                         } else {
+                          // When repaying borrowed money, it's an expense - "Loan Repaid"
                           await ref.read(expenseProvider.notifier).add(
                                 ExpenseModel(
                                   id: '',
@@ -609,6 +618,8 @@ class _LoansScreenState extends ConsumerState<LoansScreen>
                                   amount: amount,
                                   date: DateTime.now(),
                                   currency: 'BDT',
+                                  category:
+                                      'Loan Repaid', // Specific expense category
                                   sourceType: 'loan_repayment',
                                   sourceId: loan.id,
                                 ),

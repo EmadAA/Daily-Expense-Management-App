@@ -20,20 +20,31 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
   final _searchCtrl = TextEditingController();
   String _searchText = '';
   String _filterType = 'All';
-  String _filterCategory = 'All'; // All / Loan / Goal / Savings / Recurring
+  String _filterCategory = 'All'; // All, Loan, Goal, Savings, or specific categories
   String _sortOrder = 'Oldest';
   DateTime? _selectedMonth;
 
-  // Sector tags used by each category
-  static const _loanSectors = {
-    'Loan Given',
-    'Loan Received',
+  // Category filter options
+  static const List<Map<String, dynamic>> _categoryFilters = [
+    {'label': 'All', 'icon': Icons.list_alt_rounded, 'value': 'All'},
+    {'label': 'Loan', 'icon': Icons.handshake_outlined, 'value': 'Loan'},
+    {'label': 'Savings', 'icon': Icons.savings, 'value': 'Savings'},
+    {'label': 'Food', 'icon': Icons.restaurant, 'value': 'Food'},
+    {'label': 'Groceries', 'icon': Icons.shopping_cart, 'value': 'Groceries'},
+    {'label': 'Salary', 'icon': Icons.work, 'value': 'Salary'},
+    {'label': 'Gift', 'icon': Icons.card_giftcard, 'value': 'Gift'},
+    {'label': 'Others', 'icon': Icons.category, 'value': 'Other'},
+  ];
+
+  // Loan-related categories
+  static const List<String> _loanCategories = [
     'Loan Borrowed',
-    'Loan Repaid'
-  };
-  static const _goalSectors = {'Savings'};
-  static const _recurringTag =
-      '(auto)'; // recurring entries have "(auto)" in details
+    'Loan Given',
+    'Loan Repaid',
+  ];
+
+  // Savings category
+  static const String _savingsCategory = 'Savings';
 
   @override
   void dispose() {
@@ -138,50 +149,44 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     );
   }
 
-  bool _matchesCategory(Map<String, dynamic> t) {
+  bool _matchesCategory(dynamic transaction) {
     if (_filterCategory == 'All') return true;
 
-    final sector = t['sector'] as String;
-    final details = t['details'] as String;
+    // Get category from transaction
+    String category;
+    if (transaction is IncomeModel) {
+      category = transaction.category;
+    } else if (transaction is ExpenseModel) {
+      category = transaction.category;
+    } else {
+      return true;
+    }
 
     switch (_filterCategory) {
       case 'Loan':
-        return _loanSectors.contains(sector);
-      case 'Goal':
-        return _goalSectors.contains(sector);
-      case 'Recurring':
-        return details.contains(_recurringTag);
+        return _loanCategories.contains(category);
+      case 'Savings':
+        return category == _savingsCategory;
       default:
-        return true;
+        // For specific categories like Food, Salary, etc.
+        return category == _filterCategory;
     }
   }
 
-  List<Map<String, dynamic>> _buildList(
+  List<dynamic> _buildList(
     List<IncomeModel> incomes,
     List<ExpenseModel> expenses,
   ) {
-    final list = <Map<String, dynamic>>[];
+    final list = <dynamic>[];
 
     if (_filterType != 'Expense') {
       for (final i in incomes) {
-        list.add({
-          'type': 'income',
-          'sector': i.sector,
-          'details': i.details,
-          'amount': i.amount,
-          'date': i.date,
-        });
+        list.add(i);
       }
     }
     if (_filterType != 'Income') {
       for (final e in expenses) {
-        list.add({
-          'type': 'expense',
-          'sector': e.sector,
-          'details': e.details,
-          'amount': e.amount,
-          'date': e.date,
-        });
+        list.add(e);
       }
     }
 
@@ -191,25 +196,37 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     // Month filter
     if (_selectedMonth != null) {
       list.retainWhere((t) {
-        final d = t['date'] as DateTime;
+        final d = t.date;
         return d.year == _selectedMonth!.year &&
             d.month == _selectedMonth!.month;
       });
     }
 
-    // Search filter
+    // Search filter - NOW INCLUDES CATEGORY SEARCH
     if (_searchText.isNotEmpty) {
       final q = _searchText.toLowerCase();
-      list.retainWhere((t) =>
-          (t['sector'] as String).toLowerCase().contains(q) ||
-          (t['details'] as String).toLowerCase().contains(q) ||
-          t['amount'].toString().contains(q));
+      list.retainWhere((t) {
+        // Get category from transaction
+        String category;
+        if (t is IncomeModel) {
+          category = t.category;
+        } else if (t is ExpenseModel) {
+          category = t.category;
+        } else {
+          category = '';
+        }
+        
+        return t.sector.toLowerCase().contains(q) ||
+            t.details.toLowerCase().contains(q) ||
+            t.amount.toString().contains(q) ||
+            category.toLowerCase().contains(q); // Added category search
+      });
     }
 
     // Sort
     list.sort((a, b) {
-      final dateA = a['date'] as DateTime;
-      final dateB = b['date'] as DateTime;
+      final dateA = a.date;
+      final dateB = b.date;
       return _sortOrder == 'Oldest'
           ? dateA.compareTo(dateB)
           : dateB.compareTo(dateA);
@@ -218,15 +235,27 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     return list;
   }
 
-  // New method to group transactions by date
-  List<Map<String, dynamic>> _buildGroupedList(
-      List<Map<String, dynamic>> transactions) {
+  // Method to calculate total amount for a list of transactions
+  double _calculateTotal(List<dynamic> transactions) {
+    double total = 0;
+    for (final transaction in transactions) {
+      if (transaction is IncomeModel) {
+        total += transaction.amount;
+      } else if (transaction is ExpenseModel) {
+        total -= transaction.amount; // Expenses are negative
+      }
+    }
+    return total;
+  }
+
+  // Method to group transactions by date with totals
+  List<dynamic> _buildGroupedList(List<dynamic> transactions) {
     if (transactions.isEmpty) return [];
 
-    final grouped = <String, List<Map<String, dynamic>>>{};
+    final grouped = <String, List<dynamic>>{};
 
     for (final transaction in transactions) {
-      final date = transaction['date'] as DateTime;
+      final date = transaction.date;
       final dateKey = DateFormat('yyyy-MM-dd').format(date);
 
       if (!grouped.containsKey(dateKey)) {
@@ -235,7 +264,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
       grouped[dateKey]!.add(transaction);
     }
 
-    final result = <Map<String, dynamic>>[];
+    final result = <dynamic>[];
 
     // Sort dates
     final sortedDates = grouped.keys.toList()
@@ -248,20 +277,22 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
       });
 
     for (final dateKey in sortedDates) {
-      // Add divider header
       final date = DateTime.parse(dateKey);
       final formattedDate = _getFormattedDate(date);
+      final transactionsOnDate = grouped[dateKey]!;
+      final dailyTotal = _calculateTotal(transactionsOnDate);
 
+      // Add divider header with total
       result.add({
         'isDivider': true,
         'date': date,
         'formattedDate': formattedDate,
+        'transactionCount': transactionsOnDate.length,
+        'dailyTotal': dailyTotal,
       });
 
       // Add transactions for this date
-      for (final transaction in grouped[dateKey]!) {
-        result.add(transaction);
-      }
+      result.addAll(transactionsOnDate);
     }
 
     return result;
@@ -279,6 +310,59 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
       return 'Yesterday';
     } else {
       return DateFormat('EEEE, MMMM d, yyyy').format(date);
+    }
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food':
+        return Icons.restaurant;
+      case 'Groceries':
+        return Icons.shopping_cart;
+      case 'Internet+Recharge':
+        return Icons.wifi;
+      case 'Bike':
+        return Icons.two_wheeler;
+      case 'Car':
+        return Icons.directions_car;
+      case 'Gym':
+        return Icons.fitness_center;
+      case 'Medicine+Doctor':
+        return Icons.medical_services;
+      case 'Sports':
+        return Icons.sports_soccer;
+      case 'Tour':
+        return Icons.flight_takeoff;
+      case 'Clothes':
+        return Icons.checkroom;
+      case 'Shoes':
+        return Icons.shopping_bag;
+      case 'Gift':
+        return Icons.card_giftcard;
+      case 'Education':
+        return Icons.school;
+      case 'Entertainment':
+        return Icons.movie;
+      case 'Electronics':
+        return Icons.electrical_services;
+      case 'Salary':
+        return Icons.work;
+      case 'Bonus':
+        return Icons.card_giftcard;
+      case 'Freelance Project':
+        return Icons.computer;
+      case 'Business':
+        return Icons.business_center;
+      case 'Loan Borrowed':
+        return Icons.paypal;
+      case 'Loan Given':
+        return Icons.handshake;
+      case 'Loan Repaid':
+        return Icons.assignment_turned_in;
+      case 'Savings':
+        return Icons.savings;
+      default:
+        return Icons.category;
     }
   }
 
@@ -311,6 +395,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
           data: (expenses) {
             final list = _buildList(incomes, expenses);
             final groupedList = _buildGroupedList(list);
+            final totalAmount = _calculateTotal(list);
 
             return Column(
               children: [
@@ -320,7 +405,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   child: TextField(
                     controller: _searchCtrl,
                     decoration: InputDecoration(
-                      hintText: 'Search by name, amount...',
+                      hintText: 'Search by name, amount, or category...',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchText.isNotEmpty
                           ? IconButton(
@@ -335,6 +420,39 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                     onChanged: (v) => setState(() => _searchText = v),
                   ),
                 ),
+
+                // ── Search suggestions / active filters ──
+                if (_searchText.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.search,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Searching: "$_searchText"',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
 
                 // ── Row 1: Month + Type + Sort ──────
                 Padding(
@@ -444,38 +562,33 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        for (final entry in [
-                          {'label': 'All', 'icon': Icons.list_alt_rounded},
-                          {'label': 'Loan', 'icon': Icons.handshake_outlined},
-                          {'label': 'Goal', 'icon': Icons.track_changes},
-                          {'label': 'Recurring', 'icon': Icons.repeat},
-                        ])
+                        for (final filter in _categoryFilters)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
                               avatar: Icon(
-                                entry['icon'] as IconData,
+                                filter['icon'] as IconData,
                                 size: 14,
-                                color: _filterCategory == entry['label']
+                                color: _filterCategory == filter['value']
                                     ? Theme.of(context).colorScheme.onPrimary
                                     : Theme.of(context)
                                         .colorScheme
                                         .onSurfaceVariant,
                               ),
                               label: Text(
-                                entry['label'] as String,
+                                filter['label'] as String,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: _filterCategory == entry['label']
+                                  color: _filterCategory == filter['value']
                                       ? Theme.of(context).colorScheme.onPrimary
                                       : null,
                                 ),
                               ),
-                              selected: _filterCategory == entry['label'],
+                              selected: _filterCategory == filter['value'],
                               selectedColor:
                                   Theme.of(context).colorScheme.primary,
                               onSelected: (_) => setState(() =>
-                                  _filterCategory = entry['label'] as String),
+                                  _filterCategory = filter['value'] as String),
                               visualDensity: VisualDensity.compact,
                               showCheckmark: false,
                             ),
@@ -486,40 +599,96 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                 ),
                 const SizedBox(height: 6),
 
-                // ── Count ───────────────────────────
+                // ── Count and Total ───────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${list.length} transaction${list.length != 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.outline,
+                      // Left side: transaction count
+                      Row(
+                        children: [
+                          Text(
+                            '${list.length} transaction${list.length != 1 ? 's' : ''}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                          if (monthLabel != null) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '· $monthLabel',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          if (_filterCategory != 'All') ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '· $_filterCategory',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                          if (_searchText.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '· Search: "$_searchText"',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Theme.of(context).colorScheme.secondary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      
+                      // Right side: total amount
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: totalAmount >= 0
+                              ? const Color(0xFF1D9E75).withOpacity(0.1)
+                              : const Color(0xFFD85A30).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              totalAmount >= 0
+                                  ? Icons.trending_up
+                                  : Icons.trending_down,
+                              size: 14,
+                              color: totalAmount >= 0
+                                  ? const Color(0xFF1D9E75)
+                                  : const Color(0xFFD85A30),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${totalAmount >= 0 ? '+' : ''}৳ ${fmt.format(totalAmount.abs())}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: totalAmount >= 0
+                                    ? const Color(0xFF1D9E75)
+                                    : const Color(0xFFD85A30),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      if (monthLabel != null) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          '· $monthLabel',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                      if (_filterCategory != 'All') ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          '· $_filterCategory',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -528,14 +697,47 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                 // ── Transaction list with dividers ───
                 Expanded(
                   child: groupedList.isEmpty
-                      ? const Center(child: Text('No transactions found.'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _searchText.isNotEmpty
+                                    ? 'No transactions match "$_searchText"'
+                                    : 'No transactions found.',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                              ),
+                              if (_searchText.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    setState(() => _searchText = '');
+                                  },
+                                  icon: const Icon(Icons.clear),
+                                  label: const Text('Clear Search'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        )
                       : ListView.builder(
                           itemCount: groupedList.length,
                           itemBuilder: (context, index) {
                             final item = groupedList[index];
 
                             // Check if this is a divider
-                            if (item['isDivider'] == true) {
+                            if (item is Map && item['isDivider'] == true) {
+                              final dailyTotal = item['dailyTotal'] as double;
+                              
                               return Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
@@ -553,38 +755,69 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                   ),
                                 ),
                                 child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
+                                    // Left side: date and count
                                     Expanded(
-                                      child: Text(
-                                        item['formattedDate'],
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            item['formattedDate'],
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primaryContainer,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              '${item['transactionCount']} items',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimaryContainer,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
+                                    
+                                    // Right side: daily total
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
-                                        vertical: 2,
+                                        vertical: 3,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primaryContainer,
-                                        borderRadius: BorderRadius.circular(12),
+                                        color: dailyTotal >= 0
+                                            ? const Color(0xFF1D9E75).withOpacity(0.1)
+                                            : const Color(0xFFD85A30).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Text(
-                                        '${groupedList.where((e) => e['isDivider'] != true && e['date'] != null && DateFormat('yyyy-MM-dd').format(e['date'] as DateTime) == DateFormat('yyyy-MM-dd').format(item['date'] as DateTime)).length} items',
+                                        '${dailyTotal >= 0 ? '+' : ''}৳ ${fmt.format(dailyTotal.abs())}',
                                         style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: dailyTotal >= 0
+                                              ? const Color(0xFF1D9E75)
+                                              : const Color(0xFFD85A30),
                                         ),
                                       ),
                                     ),
@@ -594,16 +827,20 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                             }
 
                             // Regular transaction item
-                            final isIncome = item['type'] == 'income';
+                            final transaction = item;
+                            final isIncome = transaction is IncomeModel;
                             final color = isIncome
                                 ? const Color(0xFF1D9E75)
                                 : const Color(0xFFD85A30);
                             final bgColor = isIncome
                                 ? const Color(0xFFEAF3DE)
                                 : const Color(0xFFFAECE7);
-                            final date = item['date'] as DateTime;
+                            final date = transaction.date;
                             final dateStr =
                                 '${date.day}/${date.month}/${date.year}';
+                            final category = isIncome
+                                ? (transaction as IncomeModel).category
+                                : (transaction as ExpenseModel).category;
 
                             return Card(
                               margin: const EdgeInsets.symmetric(
@@ -619,16 +856,52 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                     size: 18,
                                   ),
                                 ),
-                                title: Text(item['sector'],
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w500),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
+                                title: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        transaction.sector,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w500),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: color.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            _getCategoryIcon(category),
+                                            size: 10,
+                                            color: color,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            category,
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: color,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if ((item['details'] as String).isNotEmpty)
-                                      Text(item['details'],
+                                    if (transaction.details.isNotEmpty)
+                                      Text(transaction.details,
                                           style: const TextStyle(fontSize: 12),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis),
@@ -637,10 +910,9 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                             fontSize: 11, color: Colors.grey)),
                                   ],
                                 ),
-                                isThreeLine:
-                                    (item['details'] as String).isNotEmpty,
+                                isThreeLine: transaction.details.isNotEmpty,
                                 trailing: Text(
-                                  '${isIncome ? '+' : '-'} ৳ ${fmt.format(item['amount'])}',
+                                  '${isIncome ? '+' : '-'} ৳ ${fmt.format(transaction.amount)}',
                                   style: TextStyle(
                                     color: color,
                                     fontWeight: FontWeight.bold,

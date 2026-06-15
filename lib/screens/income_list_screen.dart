@@ -63,6 +63,44 @@ class _IncomeCard extends ConsumerWidget {
   final IncomeModel income;
   const _IncomeCard({required this.income});
 
+  String _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Salary':
+        return '💼';
+      case 'Bonus':
+        return '🎁';
+      case 'Freelance Project':
+        return '💻';
+      case 'Business':
+        return '🏢';
+      case 'Gift':
+        return '🎁';
+      case 'Loan Borrowed':
+        return '💰';
+      default:
+        return '📌';
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Salary':
+        return const Color(0xFF1D9E75);
+      case 'Bonus':
+        return const Color(0xFFEF9F27);
+      case 'Freelance Project':
+        return const Color(0xFF378ADD);
+      case 'Business':
+        return const Color(0xFF7F77DD);
+      case 'Gift':
+        return const Color(0xFFD4537E);
+      case 'Loan Borrowed':
+        return const Color(0xFFD85A30);
+      default:
+        return const Color(0xFF888780);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fmt = NumberFormat('#,##0.00');
@@ -71,72 +109,136 @@ class _IncomeCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Sector name (title) ──────────────
-            Text(
-              income.sector,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
+            // ── Sector name + Category Badge ──────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    income.sector,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(income.category).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _getCategoryColor(income.category).withOpacity(0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _getCategoryIcon(income.category),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        income.category,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: _getCategoryColor(income.category),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
 
             // ── Details ──────────────────────────
             if (income.details.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 income.details,
                 style: const TextStyle(
                   fontSize: 13,
                   color: Colors.grey,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
 
             // ── Date ─────────────────────────────
-            const SizedBox(height: 4),
-            Text(
-              dateStr,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Colors.grey,
-              ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 12,
+                  color: Colors.grey.shade500,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  dateStr,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             const Divider(height: 1),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             // ── Amount + buttons ──────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Amount
-                Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Color(0xFFEAF3DE),
-                      child: Icon(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1D9E75).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
                         Icons.arrow_downward_rounded,
                         color: Color(0xFF1D9E75),
-                        size: 13,
+                        size: 16,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '+ ৳ ${fmt.format(income.amount)}',
-                      style: const TextStyle(
-                        color: Color(0xFF1D9E75),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      const SizedBox(width: 6),
+                      Text(
+                        '৳ ${fmt.format(income.amount)}',
+                        style: const TextStyle(
+                          color: Color(0xFF1D9E75),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
                 // Edit + Delete buttons
@@ -196,9 +298,8 @@ class _IncomeCard extends ConsumerWidget {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () async {
-                      Navigator.pop(context); // close sheet first
+                      Navigator.pop(context);
                       await ref.read(incomeProvider.notifier).delete(income.id);
-                      // Only invalidate if ref is still valid
                       try {
                         ref.invalidate(loanProvider);
                         ref.invalidate(savingsGoalProvider);

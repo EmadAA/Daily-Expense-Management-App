@@ -5,6 +5,7 @@ class IncomeModel {
   final double amount;
   final DateTime date;
   final String currency;
+  final String category; // Added category field
   final String? receiptUrl;
   final String? sourceType;
   final String? sourceId;
@@ -16,6 +17,7 @@ class IncomeModel {
     required this.amount,
     required this.date,
     this.currency = 'BDT',
+    required this.category, // Required parameter
     this.receiptUrl,
     this.sourceType,
     this.sourceId,
@@ -29,6 +31,7 @@ class IncomeModel {
       amount: (map['amount'] as num).toDouble(),
       date: DateTime.parse(map['date']),
       currency: map['currency'] ?? 'BDT',
+      category: map['category'] ?? 'Other', // Default to Other
       receiptUrl: map['receipt_url'],
       sourceType: map['source_type'],
       sourceId: map['source_id'],
@@ -43,6 +46,7 @@ class IncomeModel {
       'amount': amount,
       'date': date.toIso8601String().substring(0, 10),
       'currency': currency,
+      'category': category, // Added category to map
       'receipt_url': receiptUrl,
       'source_type': sourceType,
       'source_id': sourceId,
