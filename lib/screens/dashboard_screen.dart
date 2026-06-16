@@ -17,7 +17,7 @@ import '../providers/recurring_provider.dart';
 import '../services/currency_rate_service.dart';
 import '../services/refresh_service.dart';
 import 'account_screen.dart';
-import 'all_transactions_screen.dart';
+import 'Balance/all_transactions_screen.dart';
 import 'expense_list_screen.dart';
 import 'income_list_screen.dart';
 import 'loans_screen.dart';
@@ -25,8 +25,8 @@ import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'savings_goal_screen.dart';
 import 'summary_screen.dart';
-import 'dual_balance_section.dart';
-import 'collapsible_monthly_summary.dart';
+import 'Balance/dual_balance_section.dart';
+import 'Balance/collapsible_monthly_summary.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});

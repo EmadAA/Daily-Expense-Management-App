@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../models/expense_model.dart';
-import '../models/income_model.dart';
-import '../providers/expense_provider.dart';
-import '../providers/income_provider.dart';
+import '../../models/expense_model.dart';
+import '../../models/income_model.dart';
+import '../../providers/expense_provider.dart';
+import '../../providers/income_provider.dart';
 
 class CurrentMonthSummaryCard extends ConsumerWidget {
   const CurrentMonthSummaryCard({super.key});
