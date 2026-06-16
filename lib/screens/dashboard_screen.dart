@@ -18,15 +18,14 @@ import '../services/currency_rate_service.dart';
 import '../services/refresh_service.dart';
 import 'account_screen.dart';
 import 'all_transactions_screen.dart';
-// import 'budget_screen.dart';
 import 'expense_list_screen.dart';
 import 'income_list_screen.dart';
 import 'loans_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
-// import 'recurring_screen.dart';
 import 'savings_goal_screen.dart';
 import 'summary_screen.dart';
+import 'current_month_summary_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -109,8 +108,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 initialValue: selected,
                 tooltip: 'Display currency',
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
                   child: Text(selected,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
@@ -120,8 +118,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 itemBuilder: (_) => CurrencyRateService.supported
                     .map((c) => PopupMenuItem(
                           value: c,
-                          child:
-                              Text('$c  ${CurrencyRateService.symbolFor(c)}'),
+                          child: Text('$c  ${CurrencyRateService.symbolFor(c)}'),
                         ))
                     .toList(),
               );
@@ -243,8 +240,7 @@ class _MonthSelector extends StatelessWidget {
                         'Back to Current',
                         style: TextStyle(
                           fontSize: 10,
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -496,8 +492,7 @@ class _BalanceCardState extends State<_BalanceCard>
                     widget.totalBorrowedRemaining > 0)) ...[
               const SizedBox(height: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -591,8 +586,7 @@ class _ViewToggle extends StatelessWidget {
                 : Colors.white.withOpacity(0.08),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color:
-                  selected ? Colors.white.withOpacity(0.6) : Colors.transparent,
+              color: selected ? Colors.white.withOpacity(0.6) : Colors.transparent,
               width: 1,
             ),
           ),
@@ -863,6 +857,164 @@ class _DualBalanceSectionState extends State<_DualBalanceSection>
   }
 }
 
+// ── Collapsible Monthly Summary Section ────────────────────────────────────────
+class _CollapsibleMonthlySummary extends StatefulWidget {
+  final bool balanceVisible;
+
+  const _CollapsibleMonthlySummary({
+    required this.balanceVisible,
+  });
+
+  @override
+  State<_CollapsibleMonthlySummary> createState() => _CollapsibleMonthlySummaryState();
+}
+
+class _CollapsibleMonthlySummaryState extends State<_CollapsibleMonthlySummary>
+    with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
+  late AnimationController _expandCtrl;
+  late Animation<double> _expandAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _expandCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _expandAnim = CurvedAnimation(
+      parent: _expandCtrl,
+      curve: Curves.easeInOut,
+    );
+    _loadPreference();
+  }
+
+  Future<void> _loadPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool('showMonthlySummary');
+    if (saved != null && mounted) {
+      setState(() {
+        _isExpanded = saved;
+        if (_isExpanded) {
+          _expandCtrl.value = 1.0;
+        }
+      });
+    }
+  }
+
+  Future<void> _savePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('showMonthlySummary', _isExpanded);
+  }
+
+  @override
+  void dispose() {
+    _expandCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _expandCtrl.forward();
+      } else {
+        _expandCtrl.reverse();
+      }
+      _savePreference();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Toggle Button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: InkWell(
+            onTap: _toggleExpanded,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: _isExpanded
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isExpanded
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                      : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: _isExpanded
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    _isExpanded
+                        ? 'Hide Monthly Summary'
+                        : 'Show Monthly Summary',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _isExpanded
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Icon(
+                    _isExpanded
+                        ? Icons.visibility
+                        : Icons.visibility_off_outlined,
+                    size: 18,
+                    color: _isExpanded
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Collapsible Content
+        AnimatedBuilder(
+          animation: _expandAnim,
+          builder: (context, child) {
+            return ClipRect(
+              child: Align(
+                heightFactor: _expandAnim.value,
+                child: child,
+              ),
+            );
+          },
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 0),
+            child: CurrentMonthSummaryCard(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Body ──────────────────────────────────────────────────────────────────────
 
 class _Body extends ConsumerWidget {
@@ -1042,9 +1194,12 @@ class _Body extends ConsumerWidget {
           fmt: fmt,
           selectedMonth: selectedMonth,
         ),
+        
+        
+        
         const SizedBox(height: 20),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 5),
           child: Column(
             children: [
               Row(
@@ -1068,7 +1223,6 @@ class _Body extends ConsumerWidget {
                         MaterialPageRoute(
                             builder: (_) => const ExpenseListScreen())),
                   ),
-                 
                 ],
               ),
               const SizedBox(height: 12),
@@ -1084,26 +1238,6 @@ class _Body extends ConsumerWidget {
                             builder: (_) => const SummaryScreen())),
                   ),
                   const SizedBox(width: 12),
-                  // _NavButton(
-                  //   label: 'Budget',
-                  //   icon: Icons.account_balance_wallet_outlined,
-                  //   color: const Color(0xFF7F77DD),
-                  //   onTap: () => Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //           builder: (_) => const BudgetScreen())),
-                  // ),
-                  // const SizedBox(width: 12),
-                  // _NavButton(
-                  //   label: 'Recurring',
-                  //   icon: Icons.repeat,
-                  //   color: const Color(0xFF5DCAA5),
-                  //   onTap: () => Navigator.push(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //           builder: (_) => const RecurringScreen())),
-                  // ),
-                  // const SizedBox(width: 12),
                   _NavButton(
                     label: 'All Transactions',
                     icon: Icons.list_alt_rounded,
@@ -1113,7 +1247,6 @@ class _Body extends ConsumerWidget {
                         MaterialPageRoute(
                             builder: (_) => const AllTransactionsScreen())),
                   ),
-                  
                 ],
               ),
               const SizedBox(height: 12),
@@ -1127,7 +1260,7 @@ class _Body extends ConsumerWidget {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const AccountsScreen())),
-                  ),
+                  ),                  
                 ],
               ),
               const SizedBox(height: 12),
@@ -1152,12 +1285,18 @@ class _Body extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+        
+        // ── Collapsible Monthly Summary Card ──
+        _CollapsibleMonthlySummary(
+          balanceVisible: balanceVisible,
+        ),
             ],
           ),
         ),
         const SizedBox(height: 12),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
               Text('Recent Transactions',
@@ -1183,7 +1322,7 @@ class _Body extends ConsumerWidget {
           )
         else
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Column(
               children:
                   recent.map((t) => _TransactionTile(transaction: t)).toList(),
