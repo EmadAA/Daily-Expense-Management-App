@@ -47,24 +47,21 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
           final today = DateTime.now();
           final daysPassed = today.day;
           
-          // Calculate daily average based on days passed (not total days in month)
+          // Calculate daily average based on days passed
           final double dailyAverage = daysPassed > 0 ? totalExpense / daysPassed : 0.0;
 
-          // Find top spending category
+          // Find top spending categories (top 3)
           final Map<String, double> categorySpending = {};
           for (final expense in monthlyExpenses) {
             categorySpending[expense.category] = 
                 (categorySpending[expense.category] ?? 0.0) + expense.amount;
           }
           
-          String topCategory = 'N/A';
-          double topAmount = 0;
-          categorySpending.forEach((category, amount) {
-            if (amount > topAmount) {
-              topAmount = amount;
-              topCategory = category;
-            }
-          });
+          // Sort categories by amount (highest first) and take top 3
+          final sortedCategories = categorySpending.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          
+          final topCategories = sortedCategories.take(3).toList();
 
           // Calculate days remaining
           final daysRemaining = daysInMonth - today.day;
@@ -78,8 +75,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
             totalExpense: totalExpense,
             balance: balance,
             dailyAverage: dailyAverage,
-            topCategory: topCategory,
-            topAmount: topAmount,
+            topCategories: topCategories,
             daysRemaining: daysRemaining,
             daysInMonth: daysInMonth,
             daysPassed: daysPassed,
@@ -130,8 +126,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
     required double totalExpense,
     required double balance,
     required double dailyAverage,
-    required String topCategory,
-    required double topAmount,
+    required List<MapEntry<String, double>> topCategories,
     required int daysRemaining,
     required int daysInMonth,
     required int daysPassed,
@@ -140,6 +135,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
   }) {
     final fmt = NumberFormat('#,##0.00');
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasCategories = topCategories.isNotEmpty;
 
     return Card(
       elevation: 4,
@@ -239,7 +235,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                         Text(
                           'Net Balance',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 13,
                             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           ),
                         ),
@@ -247,7 +243,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                         Text(
                           '${balance >= 0 ? '+' : ''}৳ ${fmt.format(balance)}',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: balance >= 0
                                 ? const Color(0xFF1D9E75)
@@ -287,7 +283,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
 
-              // Additional info - 3 items in a row
+              // Additional info - 2 items in a row
               Row(
                 children: [
                   Expanded(
@@ -302,7 +298,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                   Expanded(
                     child: _buildInfoTile(
                       icon: Icons.trending_up,
-                      label: 'Estimated Amount of this Month',
+                      label: 'Estimated Month End',
                       value: '৳ ${fmt.format(projectedExpense)}',
                       isDark: isDark,
                       color: projectedExpense > totalIncome ? Colors.red : Colors.green,
@@ -371,45 +367,104 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              // Top Category
-              if (topCategory != 'N/A') ...[
+              // ── Top 3 Expense Categories ──
+              if (hasCategories) ...[
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isDark
                         ? Colors.white.withOpacity(0.05)
-                        : const Color(0xFFD85A30).withOpacity(0.08),
+                        : const Color(0xFFD85A30).withOpacity(0.06),
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : const Color(0xFFD85A30).withOpacity(0.15),
+                    ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.arrow_upward_rounded,
-                        color: Color(0xFFD85A30),
-                        size: 14,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Most Expense Category : $topCategory',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white : Colors.black87,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up_rounded,
+                            size: 16,
+                            color: const Color(0xFFD85A30),
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Top ${topCategories.length} Expense Categories',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFFD85A30),
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '৳ ${fmt.format(topAmount)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFD85A30),
-                        ),
-                      ),
+                      const SizedBox(height: 10),
+                      ...topCategories.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final category = entry.value.key;
+                        final amount = entry.value.value;
+                        
+                        // Different colors for top 3
+                        final List<Color> colors = [
+                          const Color(0xFFD85A30), // Red for #1
+                          const Color(0xFFEF9F27), // Orange for #2
+                          const Color(0xFF378ADD), // Blue for #3
+                        ];
+                        final Color categoryColor = colors[index % colors.length];
+                        
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: categoryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: categoryColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '৳ ${fmt.format(amount)}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: categoryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -465,7 +520,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
           Expanded(
             child: Column(
@@ -474,14 +529,14 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : Colors.black87,
                   ),
@@ -511,7 +566,7 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color ?? (isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
+          Icon(icon, size: 16, color: color ?? (isDark ? Colors.grey.shade400 : Colors.grey.shade600)),
           const SizedBox(width: 6),
           Expanded(
             child: Column(
@@ -520,14 +575,14 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                   ),
                 ),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: color ?? (isDark ? Colors.white : Colors.black87),
                   ),
