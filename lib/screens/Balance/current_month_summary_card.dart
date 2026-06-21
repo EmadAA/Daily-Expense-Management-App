@@ -1,4 +1,4 @@
-// ignore_for_file: unused_import
+// ignore_for_file: deprecated_member_use, unused_import
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -389,18 +389,18 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.trending_up_rounded,
                             size: 16,
-                            color: const Color(0xFFD85A30),
+                            color: Color(0xFFD85A30),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             'Top ${topCategories.length} Expense Categories',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFFD85A30),
+                              color: Color(0xFFD85A30),
                             ),
                           ),
                         ],

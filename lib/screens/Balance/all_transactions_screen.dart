@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_cast
+// ignore_for_file: deprecated_member_use, unnecessary_cast
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
