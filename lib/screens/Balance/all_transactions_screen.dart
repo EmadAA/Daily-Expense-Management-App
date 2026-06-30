@@ -23,10 +23,9 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
   String _searchText = '';
   String _filterType = 'All';
   String _filterCategory = 'All';
-  String _sortOrder = 'Newest'; // Changed default to Newest
+  String _sortOrder = 'Newest';
   DateTime? _selectedMonth;
 
-  // Category filter options - Updated with all categories
   static const List<Map<String, dynamic>> _categoryFilters = [
     {'label': 'All', 'icon': Icons.list_alt_rounded, 'value': 'All'},
     {'label': 'Loan', 'icon': Icons.handshake_outlined, 'value': 'Loan'},
@@ -57,7 +56,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     {'label': 'Others', 'icon': Icons.category, 'value': 'Other'},
   ];
 
-  // Loan-related categories
   static const List<String> _loanCategories = [
     'Loan Borrowed',
     'Loan Given',
@@ -65,7 +63,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
     'Loan Received',
   ];
 
-  // Savings category
   static const String _savingsCategory = 'Savings';
 
   @override
@@ -325,7 +322,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      // Expense Categories
       case 'Food':
         return Icons.restaurant;
       case 'Groceries':
@@ -366,8 +362,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         return Icons.face;
       case 'Savings':
         return Icons.savings;
-      
-      // Income Categories
       case 'Salary':
         return Icons.work;
       case 'Bonus':
@@ -376,8 +370,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         return Icons.computer;
       case 'Business':
         return Icons.business_center;
-      
-      // Loan Categories
       case 'Loan Borrowed':
         return Icons.paypal;
       case 'Loan Given':
@@ -386,7 +378,6 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         return Icons.assignment_turned_in;
       case 'Loan Received':
         return Icons.assignment_turned_in;
-      
       default:
         return Icons.category;
     }
@@ -402,21 +393,57 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
         : null;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F8FA),
       appBar: AppBar(
-        title: const Text('All Transactions'),
+        title: const Text(
+          'All Transactions',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            color: Color(0xFF1A1A2E),
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: const Color(0xFF1A1A2E),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () => refreshAll(ref),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              tooltip: 'Refresh',
+              onPressed: () => refreshAll(ref),
+              style: IconButton.styleFrom(
+                foregroundColor: const Color(0xFF1D9E75),
+              ),
+            ),
           ),
         ],
       ),
       body: incomeAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF1D9E75),
+          ),
+        ),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (incomes) => expenseAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF1D9E75),
+            ),
+          ),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (expenses) {
             final list = _buildList(incomes, expenses);
@@ -427,49 +454,83 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
               children: [
                 // Search bar
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Search by name, amount, or category...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchText.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _searchText = '');
-                              },
-                            )
-                          : null,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    onChanged: (v) => setState(() => _searchText = v),
+                    child: TextField(
+                      controller: _searchCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Search transactions...',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: Colors.grey.shade400,
+                        ),
+                        suffixIcon: _searchText.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.grey.shade400,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => _searchText = '');
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      onChanged: (v) => setState(() => _searchText = v),
+                    ),
                   ),
                 ),
 
                 if (_searchText.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFF1D9E75).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.search,
+                            Icons.search_rounded,
                             size: 14,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: const Color(0xFF1D9E75),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Searching: "$_searchText"',
+                            'Results for "$_searchText"',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: const Color(0xFF1D9E75),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -479,48 +540,68 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                   ),
                 ],
 
-                // Row 1: Month + Type + Sort
+                // Filter chips row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
+                        // Month picker
                         GestureDetector(
                           onTap: () => _pickMonth(context),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
                               color: _selectedMonth != null
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.surfaceVariant,
+                                  ? const Color(0xFF1D9E75)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _selectedMonth != null
+                                    ? const Color(0xFF1D9E75)
+                                    : Colors.grey.shade200,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                if (_selectedMonth == null)
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                              ],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.calendar_month_outlined,
-                                    size: 16,
-                                    color: _selectedMonth != null
-                                        ? Theme.of(context).colorScheme.onPrimary
-                                        : Theme.of(context).colorScheme.onSurfaceVariant),
+                                Icon(
+                                  Icons.calendar_month_outlined,
+                                  size: 16,
+                                  color: _selectedMonth != null
+                                      ? Colors.white
+                                      : Colors.grey.shade600,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   monthLabel ?? 'All months',
                                   style: TextStyle(
                                     fontSize: 13,
+                                    fontWeight: FontWeight.w500,
                                     color: _selectedMonth != null
-                                        ? Theme.of(context).colorScheme.onPrimary
-                                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ? Colors.white
+                                        : const Color(0xFF1A1A2E),
                                   ),
                                 ),
                                 if (_selectedMonth != null) ...[
                                   const SizedBox(width: 6),
                                   GestureDetector(
                                     onTap: () => setState(() => _selectedMonth = null),
-                                    child: Icon(Icons.close,
-                                        size: 14,
-                                        color: Theme.of(context).colorScheme.onPrimary),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ],
                               ],
@@ -528,35 +609,85 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // Type chips
                         for (final type in ['All', 'Income', 'Expense'])
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: ChoiceChip(
-                              label: Text(type, style: const TextStyle(fontSize: 12)),
+                              label: Text(
+                                type,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: type == _filterType
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                ),
+                              ),
                               selected: _filterType == type,
                               onSelected: (_) => setState(() => _filterType = type),
+                              selectedColor: const Color(0xFF1D9E75),
+                              backgroundColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: _filterType == type
+                                    ? Colors.white
+                                    : const Color(0xFF1A1A2E),
+                              ),
+                              side: BorderSide(
+                                color: _filterType == type
+                                    ? const Color(0xFF1D9E75)
+                                    : Colors.grey.shade200,
+                                width: 1,
+                              ),
                               visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
                             ),
                           ),
                         const SizedBox(width: 4),
-                        IconButton(
-                          tooltip: _sortOrder,
-                          icon: Icon(
-                            _sortOrder == 'Oldest'
-                                ? Icons.arrow_upward
-                                : Icons.arrow_downward,
-                            size: 20,
+                        // Sort button
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          onPressed: () => setState(() {
-                            _sortOrder = _sortOrder == 'Oldest' ? 'Newest' : 'Oldest';
-                          }),
+                          child: IconButton(
+                            icon: Icon(
+                              _sortOrder == 'Oldest'
+                                  ? Icons.arrow_upward_rounded
+                                  : Icons.arrow_downward_rounded,
+                              size: 18,
+                              color: const Color(0xFF1A1A2E),
+                            ),
+                            onPressed: () => setState(() {
+                              _sortOrder = _sortOrder == 'Oldest' ? 'Newest' : 'Oldest';
+                            }),
+                            tooltip: _sortOrder,
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
 
-                // Row 2: Category filters
+                // Category filter chips
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: SingleChildScrollView(
@@ -565,126 +696,196 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                       children: [
                         for (final filter in _categoryFilters)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.only(right: 6),
                             child: FilterChip(
                               avatar: Icon(
                                 filter['icon'] as IconData,
                                 size: 14,
                                 color: _filterCategory == filter['value']
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
                               ),
                               label: Text(
                                 filter['label'] as String,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: _filterCategory == filter['value']
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : null,
+                                  fontSize: 11,
+                                  fontWeight: _filterCategory == filter['value']
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
                                 ),
                               ),
                               selected: _filterCategory == filter['value'],
-                              selectedColor: Theme.of(context).colorScheme.primary,
+                              selectedColor: const Color(0xFF1D9E75),
+                              backgroundColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: _filterCategory == filter['value']
+                                    ? Colors.white
+                                    : const Color(0xFF1A1A2E),
+                              ),
+                              side: BorderSide(
+                                color: _filterCategory == filter['value']
+                                    ? const Color(0xFF1D9E75)
+                                    : Colors.grey.shade200,
+                                width: 1,
+                              ),
                               onSelected: (_) => setState(() =>
                                   _filterCategory = filter['value'] as String),
                               visualDensity: VisualDensity.compact,
                               showCheckmark: false,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 2,
+                              ),
                             ),
                           ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
 
                 // Count and Total
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            '${list.length} transaction${list.length != 1 ? 's' : ''}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.outline,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_rounded,
+                                  size: 14,
+                                  color: Colors.grey.shade500,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${list.length} transaction${list.length != 1 ? 's' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                if (monthLabel != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1D9E75).withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      monthLabel,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: const Color(0xFF1D9E75),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (_filterCategory != 'All') ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1D9E75).withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      _filterCategory,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: const Color(0xFF1D9E75),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                          if (monthLabel != null) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              '· $monthLabel',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                          if (_filterCategory != 'All') ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              '· $_filterCategory',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                          if (_searchText.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              '· Search: "$_searchText"',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Theme.of(context).colorScheme.secondary,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: totalAmount >= 0
-                              ? const Color(0xFF1D9E75).withOpacity(0.1)
-                              : const Color(0xFFD85A30).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              totalAmount >= 0
-                                  ? Icons.trending_up
-                                  : Icons.trending_down,
-                              size: 14,
-                              color: totalAmount >= 0
-                                  ? const Color(0xFF1D9E75)
-                                  : const Color(0xFFD85A30),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: totalAmount >= 0
+                                  ? [
+                                      const Color(0xFF1D9E75).withOpacity(0.1),
+                                      const Color(0xFF1D9E75).withOpacity(0.05),
+                                    ]
+                                  : [
+                                      const Color(0xFFD85A30).withOpacity(0.1),
+                                      const Color(0xFFD85A30).withOpacity(0.05),
+                                    ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${totalAmount >= 0 ? '+' : ''}৳ ${fmt.format(totalAmount.abs())}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: totalAmount >= 0
+                                  ? const Color(0xFF1D9E75).withOpacity(0.2)
+                                  : const Color(0xFFD85A30).withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                totalAmount >= 0
+                                    ? Icons.trending_up_rounded
+                                    : Icons.trending_down_rounded,
+                                size: 14,
                                 color: totalAmount >= 0
                                     ? const Color(0xFF1D9E75)
                                     : const Color(0xFFD85A30),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                '${totalAmount >= 0 ? '+' : ''}৳ ${fmt.format(totalAmount.abs())}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: totalAmount >= 0
+                                      ? const Color(0xFF1D9E75)
+                                      : const Color(0xFFD85A30),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
 
                 // Transaction list with dividers
                 Expanded(
@@ -694,17 +895,19 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.search_off,
+                                Icons.search_off_rounded,
                                 size: 64,
-                                color: Theme.of(context).colorScheme.outline,
+                                color: Colors.grey.shade300,
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 _searchText.isNotEmpty
                                     ? 'No transactions match "$_searchText"'
-                                    : 'No transactions found.',
+                                    : 'No transactions found',
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.outline,
+                                  color: Colors.grey.shade500,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               if (_searchText.isNotEmpty) ...[
@@ -714,8 +917,18 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                     _searchCtrl.clear();
                                     setState(() => _searchText = '');
                                   },
-                                  icon: const Icon(Icons.clear),
-                                  label: const Text('Clear Search'),
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    size: 18,
+                                    color: const Color(0xFF1D9E75),
+                                  ),
+                                  label: Text(
+                                    'Clear Search',
+                                    style: TextStyle(
+                                      color: const Color(0xFF1D9E75),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ],
@@ -732,33 +945,37 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline
-                                          .withOpacity(0.2),
-                                    ),
-                                  ),
+                                  vertical: 10,
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Expanded(
+                                    Flexible(
                                       child: Row(
                                         children: [
-                                          Text(
-                                            item['formattedDate'],
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
+                                          Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF1D9E75).withOpacity(0.08),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              Icons.calendar_today_rounded,
+                                              size: 14,
+                                              color: const Color(0xFF1D9E75),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Flexible(
+                                            child: Text(
+                                              item['formattedDate'],
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF1A1A2E),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -768,19 +985,15 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primaryContainer,
-                                              borderRadius: BorderRadius.circular(12),
+                                              color: const Color(0xFF1D9E75).withOpacity(0.08),
+                                              borderRadius: BorderRadius.circular(10),
                                             ),
                                             child: Text(
-                                              '${item['transactionCount']} items',
+                                              '${item['transactionCount']}',
                                               style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimaryContainer,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF1D9E75),
                                               ),
                                             ),
                                           ),
@@ -794,9 +1007,9 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: dailyTotal >= 0
-                                            ? const Color(0xFF1D9E75).withOpacity(0.1)
-                                            : const Color(0xFFD85A30).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10),
+                                            ? const Color(0xFF1D9E75).withOpacity(0.08)
+                                            : const Color(0xFFD85A30).withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
                                         '${dailyTotal >= 0 ? '+' : ''}৳ ${fmt.format(dailyTotal.abs())}',
@@ -807,6 +1020,8 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                               ? const Color(0xFF1D9E75)
                                               : const Color(0xFFD85A30),
                                         ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -820,19 +1035,41 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                 ? const Color(0xFF1D9E75)
                                 : const Color(0xFFD85A30);
                             final bgColor = isIncome
-                                ? const Color(0xFFEAF3DE)
-                                : const Color(0xFFFAECE7);
+                                ? const Color(0xFF1D9E75).withOpacity(0.08)
+                                : const Color(0xFFD85A30).withOpacity(0.08);
                             final date = transaction.date;
                             final dateStr = '${date.day}/${date.month}/${date.year}';
                             final category = isIncome
                                 ? (transaction as IncomeModel).category
                                 : (transaction as ExpenseModel).category;
 
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            return Container(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
                               child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: bgColor,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 2,
+                                ),
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: bgColor,
+                                    shape: BoxShape.circle,
+                                  ),
                                   child: Icon(
                                     isIncome
                                         ? Icons.arrow_downward_rounded
@@ -844,39 +1081,53 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                 title: Row(
                                   children: [
                                     Expanded(
+                                      flex: 2,
                                       child: Text(
                                         transaction.sector,
-                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                          color: const Color(0xFF1A1A2E),
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: color.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            _getCategoryIcon(category),
-                                            size: 10,
-                                            color: color,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            category,
-                                            style: TextStyle(
-                                              fontSize: 9,
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      flex: 1,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: color.withOpacity(0.08),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              _getCategoryIcon(category),
+                                              size: 10,
                                               color: color,
-                                              fontWeight: FontWeight.w500,
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(width: 2),
+                                            Flexible(
+                                              child: Text(
+                                                category,
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: color,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -885,21 +1136,57 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     if (transaction.details.isNotEmpty)
-                                      Text(transaction.details,
-                                          style: const TextStyle(fontSize: 12),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis),
-                                    Text(dateStr,
-                                        style: const TextStyle(
-                                            fontSize: 11, color: Colors.grey)),
+                                      Text(
+                                        transaction.details,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 10,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          dateStr,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                                 isThreeLine: transaction.details.isNotEmpty,
-                                trailing: Text(
-                                  '${isIncome ? '+' : '-'} ৳ ${fmt.format(transaction.amount)}',
-                                  style: TextStyle(
-                                    color: color,
-                                    fontWeight: FontWeight.bold,
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.06),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: color.withOpacity(0.1),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${isIncome ? '+' : '-'}৳ ${fmt.format(transaction.amount)}',
+                                    style: TextStyle(
+                                      color: color,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ),

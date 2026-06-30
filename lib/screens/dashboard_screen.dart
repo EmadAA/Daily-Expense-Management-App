@@ -1,4 +1,4 @@
-// ignore_for_file: unused_local_variable
+// ignore_for_file: deprecated_member_use, unused_local_variable
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,68 +94,198 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final expenseAsync = ref.watch(expenseProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F8FA),
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            color: Color(0xFF1A1A2E),
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: const Color(0xFF1A1A2E),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: () => refreshAll(ref),
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              tooltip: 'Refresh',
+              onPressed: () => refreshAll(ref),
+              style: IconButton.styleFrom(
+                foregroundColor: const Color(0xFF1D9E75),
+              ),
+            ),
           ),
           Consumer(
             builder: (context, ref, _) {
               final selected = ref.watch(selectedCurrencyProvider);
-              return PopupMenuButton<String>(
-                initialValue: selected,
-                tooltip: 'Display currency',
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-                  child: Text(selected,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+              return Container(
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                onSelected: (currency) => ref
-                    .read(selectedCurrencyProvider.notifier)
-                    .state = currency,
-                itemBuilder: (_) => CurrencyRateService.supported
-                    .map((c) => PopupMenuItem(
-                          value: c,
-                          child: Text('$c  ${CurrencyRateService.symbolFor(c)}'),
-                        ))
-                    .toList(),
+                child: PopupMenuButton<String>(
+                  initialValue: selected,
+                  tooltip: 'Display currency',
+                  offset: const Offset(0, 40),
+                  position: PopupMenuPosition.under,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    child: Text(
+                      selected,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: Color(0xFF1D9E75),
+                      ),
+                    ),
+                  ),
+                  onSelected: (currency) => ref
+                      .read(selectedCurrencyProvider.notifier)
+                      .state = currency,
+                  itemBuilder: (_) => CurrencyRateService.supported
+                      .map((c) => PopupMenuItem(
+                            value: c,
+                            child: Text(
+                              '$c  ${CurrencyRateService.symbolFor(c)}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ))
+                      .toList(),
+                ),
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen())),
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.person_outline_rounded, size: 20),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
+              style: IconButton.styleFrom(
+                foregroundColor: const Color(0xFF1A1A2E),
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (_) => false,
-                );
-              }
-            },
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.logout_rounded, size: 20),
+              onPressed: () async {
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (_) => false,
+                  );
+                }
+              },
+              style: IconButton.styleFrom(
+                foregroundColor: Colors.red.shade400,
+              ),
+            ),
           ),
         ],
       ),
       body: RefreshIndicator(
+        color: const Color(0xFF1D9E75),
         onRefresh: () async {
           ref.invalidate(incomeProvider);
           ref.invalidate(expenseProvider);
         },
         child: incomeAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          loading: () => const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF1D9E75),
+            ),
+          ),
+          error: (e, _) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error: $e',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
           data: (incomes) => expenseAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF1D9E75),
+              ),
+            ),
+            error: (e, _) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: $e',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
             data: (expenses) => _Body(
               incomes: incomes,
               expenses: expenses,
@@ -195,15 +325,15 @@ class _MonthSelector extends StatelessWidget {
     final monthFormat = DateFormat('MMMM yyyy');
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -211,10 +341,11 @@ class _MonthSelector extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left, size: 20),
+            icon: const Icon(Icons.chevron_left_rounded, size: 24),
             onPressed: onPrevious,
+            color: const Color(0xFF1D9E75),
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
           Expanded(
             child: Column(
@@ -223,8 +354,10 @@ class _MonthSelector extends StatelessWidget {
                 Text(
                   monthFormat.format(selectedMonth),
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A2E),
+                    letterSpacing: -0.3,
                   ),
                 ),
                 if (!isCurrentMonth)
@@ -232,17 +365,17 @@ class _MonthSelector extends StatelessWidget {
                     onTap: onCurrent,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                          horizontal: 12, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFF1D9E75).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'Back to Current',
+                        '⬤ Back to Current',
                         style: TextStyle(
                           fontSize: 10,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF1D9E75),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -251,10 +384,11 @@ class _MonthSelector extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, size: 20),
+            icon: const Icon(Icons.chevron_right_rounded, size: 24),
             onPressed: onNext,
+            color: const Color(0xFF1D9E75),
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
         ],
       ),
@@ -291,7 +425,11 @@ class _Body extends ConsumerWidget {
     final ratesAsync = ref.watch(exchangeRatesProvider);
 
     return ratesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF1D9E75),
+        ),
+      ),
       error: (_, __) => _buildBody(
           context, ref, selectedCurrency, CurrencyRateService.fallbackRates),
       data: (rates) => _buildBody(context, ref, selectedCurrency, rates),
@@ -413,17 +551,16 @@ class _Body extends ConsumerWidget {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.all(0),
+      padding: const EdgeInsets.only(bottom: 20),
       children: [
-        const SizedBox(height: 12),
         _MonthSelector(
           selectedMonth: selectedMonth,
           onPrevious: onPreviousMonth,
           onNext: onNextMonth,
           onCurrent: onGoToCurrentMonth,
         ),
-        
-        // ── Dual Balance Section (from external file) ──
+
+        // ── Dual Balance Section ──
         DualBalanceSection(
           allTimeCash: allTimeCashBalance,
           allTimeAccount: accountBalance,
@@ -443,12 +580,12 @@ class _Body extends ConsumerWidget {
           fmt: fmt,
           selectedMonth: selectedMonth,
         ),
-        
-        const SizedBox(height: 20),
-        
-        // ── Navigation Buttons ──
+
+        const SizedBox(height: 16),
+
+        // ── Navigation Grid ──
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             children: [
               Row(
@@ -458,9 +595,11 @@ class _Body extends ConsumerWidget {
                     icon: Icons.arrow_downward_rounded,
                     color: const Color(0xFF1D9E75),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const IncomeListScreen())),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const IncomeListScreen(),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   _NavButton(
@@ -468,9 +607,11 @@ class _Body extends ConsumerWidget {
                     icon: Icons.arrow_upward_rounded,
                     color: const Color(0xFFD85A30),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ExpenseListScreen())),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ExpenseListScreen(),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -482,19 +623,23 @@ class _Body extends ConsumerWidget {
                     icon: Icons.bar_chart_rounded,
                     color: const Color(0xFF378ADD),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SummaryScreen())),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SummaryScreen(),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   _NavButton(
                     label: 'All Transactions',
                     icon: Icons.list_alt_rounded,
-                    color: const Color(0xFF888780),
+                    color: const Color(0xFF7F77DD),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AllTransactionsScreen())),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AllTransactionsScreen(),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -506,10 +651,13 @@ class _Body extends ConsumerWidget {
                     icon: Icons.account_balance_wallet,
                     color: const Color(0xFF378ADD),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const AccountsScreen())),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AccountsScreen(),
+                      ),
+                    ),
                   ),
+                  
                 ],
               ),
               const SizedBox(height: 12),
@@ -520,64 +668,101 @@ class _Body extends ConsumerWidget {
                     icon: Icons.track_changes_rounded,
                     color: const Color(0xFF1D9E75),
                     onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SavingsGoalsScreen())),
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SavingsGoalsScreen(),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 12),
+                                    const SizedBox(width: 12),
+
                   _NavButton(
                     label: 'Loans',
                     icon: Icons.handshake_outlined,
                     color: const Color(0xFFD85A30),
-                    onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const LoansScreen())),
-                  ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LoansScreen(),
+                      ),
+                    ),
+                  ),               
                 ],
               ),
               const SizedBox(height: 16),
-              
-              // ── Collapsible Monthly Summary (from external file) ──
+
+              // ── Collapsible Monthly Summary ──
               CollapsibleMonthlySummary(
                 balanceVisible: balanceVisible,
               ),
             ],
           ),
         ),
-        
-        const SizedBox(height: 12),
-        
+
+        const SizedBox(height: 16),
+
         // ── Recent Transactions ──
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Text('Recent Transactions',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Recent Transactions',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A1A2E),
+                    ),
+              ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFF1D9E75).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    const Text('Last 7 days', style: TextStyle(fontSize: 11)),
+                child: const Text(
+                  'Last 7 days',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF1D9E75),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 8),
         if (recent.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: Text('No transactions in the last 7 days.')),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.inbox_rounded,
+                    size: 48,
+                    color: Colors.grey.shade300,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No transactions in the last 7 days',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           )
         else
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
-              children:
-                  recent.map((t) => _TransactionTile(transaction: t)).toList(),
+              children: recent
+                  .map((t) => _TransactionTile(transaction: t))
+                  .toList(),
             ),
           ),
         const SizedBox(height: 20),
@@ -632,21 +817,44 @@ class _NavButton extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withOpacity(0.12),
+                color.withOpacity(0.04),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(0.2),
+              width: 1,
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: color),
-              const SizedBox(height: 6),
-              Text(label,
-                  style: TextStyle(
-                      color: color, fontWeight: FontWeight.w500, fontSize: 13)),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  letterSpacing: -0.2,
+                ),
+              ),
             ],
           ),
         ),
@@ -667,12 +875,29 @@ class _TransactionTile extends StatelessWidget {
     final date = transaction['date'] as DateTime;
     final dateStr = '${date.day}/${date.month}/${date.year}';
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor:
-              isIncome ? const Color(0xFFEAF3DE) : const Color(0xFFFAECE7),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isIncome
+                ? const Color(0xFF1D9E75).withOpacity(0.1)
+                : const Color(0xFFD85A30).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
           child: Icon(
             isIncome
                 ? Icons.arrow_downward_rounded
@@ -681,11 +906,35 @@ class _TransactionTile extends StatelessWidget {
             size: 18,
           ),
         ),
-        title: Text(transaction['sector']),
-        subtitle: Text(dateStr, style: const TextStyle(fontSize: 12)),
-        trailing: Text(
-          '${isIncome ? '+' : '-'} ৳ ${fmt.format(transaction['amount'])}',
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        title: Text(
+          transaction['sector'],
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: Color(0xFF1A1A2E),
+          ),
+        ),
+        subtitle: Text(
+          dateStr,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade500,
+          ),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${isIncome ? '+' : '-'}${fmt.format(transaction['amount'])}',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
         ),
       ),
     );
