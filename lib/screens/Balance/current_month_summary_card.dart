@@ -136,6 +136,9 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
     final fmt = NumberFormat('#,##0.00');
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasCategories = topCategories.isNotEmpty;
+    
+    // Check if it's the last day of the month
+    final isLastDay = daysRemaining == 0;
 
     return Card(
       elevation: 4,
@@ -194,7 +197,9 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          '${DateFormat('MMMM yyyy').format(DateTime.now())} · Day $daysPassed of $daysInMonth',
+                          isLastDay
+                              ? 'Last day of ${DateFormat('MMMM').format(DateTime.now())}'
+                              : '${DateFormat('MMMM yyyy').format(DateTime.now())} · Day $daysPassed of $daysInMonth',
                           style: TextStyle(
                             fontSize: 11,
                             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -323,26 +328,34 @@ class CurrentMonthSummaryCard extends ConsumerWidget {
                     Row(
                       children: [
                         Icon(
-                          Icons.calendar_today,
+                          isLastDay ? Icons.calendar_today : Icons.calendar_today,
                           size: 14,
-                          color: daysRemaining <= 7
-                              ? Colors.red
-                              : isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isLastDay
+                              ? const Color(0xFF1D9E75)
+                              : daysRemaining <= 7
+                                  ? Colors.red
+                                  : isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '$daysRemaining days remaining in ${DateFormat('MMMM').format(DateTime.now())}',
+                          isLastDay
+                              ? ' Last day of ${DateFormat('MMMM').format(DateTime.now())}!'
+                              : '$daysRemaining days remaining in ${DateFormat('MMMM').format(DateTime.now())}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: daysRemaining <= 7
-                                ? Colors.red
-                                : isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                            fontWeight: daysRemaining <= 7 ? FontWeight.w600 : FontWeight.normal,
+                            color: isLastDay
+                                ? const Color(0xFF1D9E75)
+                                : daysRemaining <= 7
+                                    ? Colors.red
+                                    : isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            fontWeight: isLastDay || daysRemaining <= 7
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
                     ),
-                    if (daysRemaining > 0)
+                    if (!isLastDay && daysRemaining > 0)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(

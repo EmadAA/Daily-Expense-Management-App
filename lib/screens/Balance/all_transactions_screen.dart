@@ -23,7 +23,7 @@ class _AllTransactionsScreenState extends ConsumerState<AllTransactionsScreen> {
   String _searchText = '';
   String _filterType = 'All';
   String _filterCategory = 'All';
-  String _sortOrder = 'Oldest';
+  String _sortOrder = 'Newest'; // Changed default to Newest
   DateTime? _selectedMonth;
 
   // Category filter options - Updated with all categories

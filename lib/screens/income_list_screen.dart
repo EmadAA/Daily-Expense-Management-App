@@ -43,13 +43,80 @@ class IncomeListScreen extends ConsumerWidget {
               child: Text('No income yet. Tap + to add.'),
             );
           }
+
+          // Group incomes by date
+          final Map<DateTime, List<IncomeModel>> groupedIncomes = {};
+          for (final income in incomes) {
+            final date = DateTime(
+              income.date.year,
+              income.date.month,
+              income.date.day,
+            );
+            if (!groupedIncomes.containsKey(date)) {
+              groupedIncomes[date] = [];
+            }
+            groupedIncomes[date]!.add(income);
+          }
+
+          // Sort dates in descending order (newest first)
+          final sortedDates = groupedIncomes.keys.toList()
+            ..sort((a, b) => b.compareTo(a));
+
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(incomeProvider),
             child: ListView.builder(
-              itemCount: incomes.length,
+              itemCount: sortedDates.length,
               itemBuilder: (context, index) {
-                final income = incomes[index];
-                return _IncomeCard(income: income);
+                final date = sortedDates[index];
+                final dateIncomes = groupedIncomes[date]!;
+
+                // Sort incomes within each date (newest first by date)
+                final sortedIncomes = dateIncomes.toList()
+                  ..sort((a, b) => b.date.compareTo(a.date));
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date header with divider
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1D9E75).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              DateFormat('EEEE, d MMMM yyyy').format(date),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1D9E75),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: Colors.grey.shade300,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Income cards for this date
+                    ...sortedIncomes.map((income) => _IncomeCard(
+                      income: income,
+                    )),
+                  ],
+                );
               },
             ),
           );
@@ -104,8 +171,6 @@ class _IncomeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fmt = NumberFormat('#,##0.00');
-    final dateStr =
-        '${income.date.day}/${income.date.month}/${income.date.year}';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -181,26 +246,6 @@ class _IncomeCard extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-
-            // ── Date ─────────────────────────────
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 12,
-                  color: Colors.grey.shade500,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  dateStr,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
 
             const SizedBox(height: 12),
             const Divider(height: 1),

@@ -45,13 +45,80 @@ class ExpenseListScreen extends ConsumerWidget {
               child: Text('No expenses yet. Tap + to add.'),
             );
           }
+
+          // Group expenses by date
+          final Map<DateTime, List<ExpenseModel>> groupedExpenses = {};
+          for (final expense in expenses) {
+            final date = DateTime(
+              expense.date.year,
+              expense.date.month,
+              expense.date.day,
+            );
+            if (!groupedExpenses.containsKey(date)) {
+              groupedExpenses[date] = [];
+            }
+            groupedExpenses[date]!.add(expense);
+          }
+
+          // Sort dates in descending order (newest first)
+          final sortedDates = groupedExpenses.keys.toList()
+            ..sort((a, b) => b.compareTo(a));
+
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(expenseProvider),
             child: ListView.builder(
-              itemCount: expenses.length,
+              itemCount: sortedDates.length,
               itemBuilder: (context, index) {
-                final expense = expenses[index];
-                return _ExpenseCard(expense: expense);
+                final date = sortedDates[index];
+                final dateExpenses = groupedExpenses[date]!;
+                
+                // Sort expenses within each date (newest first by date)
+                final sortedExpenses = dateExpenses.toList()
+                  ..sort((a, b) => b.date.compareTo(a.date));
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date header with divider
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1D9E75).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              DateFormat('EEEE, d MMMM yyyy').format(date),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1D9E75),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: Colors.grey.shade300,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Expense cards for this date
+                    ...sortedExpenses.map((expense) => _ExpenseCard(
+                      expense: expense,
+                    )),
+                  ],
+                );
               },
             ),
           );
@@ -65,50 +132,50 @@ class _ExpenseCard extends ConsumerWidget {
   final ExpenseModel expense;
   const _ExpenseCard({required this.expense});
 
-String _getCategoryIcon(String category) {
-  switch (category) {
-    case 'Food':
-      return '🍔';
-    case 'Groceries':
-      return '🛒';
-    case 'Shopping':
-      return '🛍️';
-    case 'Internet+Recharge':
-      return '📱';
-    case 'Bike':
-      return '🏍️';
-    case 'Car':
-      return '🚗';
-    case 'Gym':
-      return '💪';
-    case 'Medicine+Doctor':
-      return '💊';
-    case 'Sports':
-      return '⚽';
-    case 'Tour':
-      return '✈️';
-    case 'Clothes':
-      return '👕';
-    case 'Shoes':
-      return '👟';
-    case 'Gift':
-      return '🎁';
-    case 'Education':
-      return '📚';
-    case 'Electronics':
-      return '📱';
-    case 'Subscription':
-      return '📺';
-    case 'Study':
-      return '📖';
-    case 'Books':
-      return '📚';
-    case 'Cosmetics':
-      return '💄';
-    default:
-      return '📌';
+  String _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food':
+        return '🍔';
+      case 'Groceries':
+        return '🛒';
+      case 'Shopping':
+        return '🛍️';
+      case 'Internet+Recharge':
+        return '📱';
+      case 'Bike':
+        return '🏍️';
+      case 'Car':
+        return '🚗';
+      case 'Gym':
+        return '💪';
+      case 'Medicine+Doctor':
+        return '💊';
+      case 'Sports':
+        return '⚽';
+      case 'Tour':
+        return '✈️';
+      case 'Clothes':
+        return '👕';
+      case 'Shoes':
+        return '👟';
+      case 'Gift':
+        return '🎁';
+      case 'Education':
+        return '📚';
+      case 'Electronics':
+        return '📱';
+      case 'Subscription':
+        return '📺';
+      case 'Study':
+        return '📖';
+      case 'Books':
+        return '📚';
+      case 'Cosmetics':
+        return '💄';
+      default:
+        return '📌';
+    }
   }
-}
 
   Color _getCategoryColor(String category) {
     switch (category) {
@@ -156,8 +223,6 @@ String _getCategoryIcon(String category) {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fmt = NumberFormat('#,##0.00');
-    final dateStr =
-        '${expense.date.day}/${expense.date.month}/${expense.date.year}';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -233,26 +298,6 @@ String _getCategoryIcon(String category) {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-
-            // ── Date ─────────────────────────────
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 12,
-                  color: Colors.grey.shade500,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  dateStr,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
 
             const SizedBox(height: 12),
             const Divider(height: 1),
